@@ -29,9 +29,6 @@ class User(models.Model):
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email']
 
-    def check_password(self, raw_password):
-        return True
-
     def __str__(self):
         return self.username
 
