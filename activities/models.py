@@ -44,9 +44,13 @@ class VerificationCode(models.Model):
 
 class Activity(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=250)
+    name = models.CharField(max_length=255)
     description = models.TextField()
-    start_date = models.DateTimeField(auto_now_add=True)
+    start_date = models.DateTimeField(null=True, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    place_type = models.CharField(max_length=255, null=True, blank=True)
+    osm_id = models.CharField(max_length=255, unique=True, null=True)  # Dodanie pola osm_id
 
     def __str__(self):
         return self.name
