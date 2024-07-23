@@ -3,9 +3,17 @@
 import requests
 from django.core.management.base import BaseCommand
 from activities.models import Activity, User
+import xmltodict, json
 
 class Command(BaseCommand):
     help = 'Imports OSM data and saves it to the database'
+
+    def convert_xml_to_json(self, xml_data):
+        return xmltodict.parse(xml_data)
+
+    def save_to_file(self, data, filename):
+        with open(filename, 'w') as json_file:
+            json.dump(data, json_file, indent=4)
 
     def handle(self, *args, **kwargs):
         bbox = "11.54,48.14,11.543,48.145"  # example bbox
@@ -25,6 +33,9 @@ class Command(BaseCommand):
 
         nodes = {}
         for node in root.findall('node'):
+            # save node to json file
+            nodejson = self.convert_xml_to_json(ET.tostring(node).decode())
+            self.save_to_file(nodejson, 'node.json')
             osm_id = node.get('id')
             latitude = float(node.get('lat'))
             longitude = float(node.get('lon'))
