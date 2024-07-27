@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'activities',
     'corsheaders',
+    'data_migration'
 ]
 
 REST_FRAMEWORK = {

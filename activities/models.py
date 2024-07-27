@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 class UserManager(BaseUserManager):
@@ -43,10 +44,19 @@ class VerificationCode(models.Model):
         return f"${self.user.username}' - {self.code}"
 
 class Activity(models.Model):
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     name = models.CharField(max_length=250)
-    description = models.TextField()
-    start_date = models.DateTimeField(auto_now_add=True)
+    description = models.TextField(null=True)
+    images = ArrayField(models.URLField(), blank=True, default=list)
+    destination_resource = models.CharField(max_length=250, default='user')
+    migration_data = models.JSONField(default=dict)
+    address = models.CharField(max_length=250, null=True)
+    city = models.CharField(max_length=250, null=True)
+    state = models.CharField(max_length=250, null=True)
+    country = models.CharField(max_length=250, null=True)
+    postal_code = models.CharField(max_length=250, null=True)
+    latitude = models.FloatField(null=True)
+    longitude = models.FloatField(null=True)
 
     def __str__(self):
         return self.name
