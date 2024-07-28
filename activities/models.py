@@ -58,5 +58,39 @@ class Activity(models.Model):
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
 
+    # def liked(self):
+    #     return ActivityLike.objects.filter(activity=self).count()
+
+    # def comments(self):
+    #     return ActivityComment.objects.filter(activity=self).count()
+
+    # def views(self):
+    #     return ActivityView.objects.filter(activity=self).count()
+
     def __str__(self):
         return self.name
+
+class ActivityLike(models.Model):
+    activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.activity.name}"
+
+class ActivityComment(models.Model):
+    activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.activity.name}"
+
+class ActivityView(models.Model):
+    activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.activity.name}"
