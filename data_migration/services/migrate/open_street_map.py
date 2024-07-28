@@ -3,12 +3,14 @@ from data_migration.models import OpenTripMapServiceData, DataMigrationResource
 from data_migration.services.migrate.base import DataMigrationService
 import requests
 import json
+import logging
 
 
 class OpenStreetMapMigrationService(DataMigrationService):
     def __init__(self, credentials=dict):
         self.base_url = credentials.base_url
         self.api_key = credentials.credentials.get('api_key')
+        self.logger = logging.getLogger(__name__)
 
     def required_arguments(self):
         return ['min_lat', 'max_lat', 'min_lon', 'max_lon']
@@ -37,6 +39,7 @@ class OpenStreetMapMigrationService(DataMigrationService):
 
         places_result = json.loads(places_json).get('features')
         places_ids = list(map(lambda x: x.get('properties').get('xid'), places_result))
+        self.logger.info(f'Found {len(places_ids)} places')
 
         for place_id in places_ids:
             place_json = self.make_request(
@@ -69,6 +72,7 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     longitude=place_result.get('point').get('lon'),
                 )
             )
+            self.logger.info(f'Created activity {place_result.get("name")} with xid {place_id}')
 
         OpenTripMapServiceData.objects.create(
             min_latitude=min_lat,
