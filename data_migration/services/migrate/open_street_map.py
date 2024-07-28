@@ -52,6 +52,13 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     return [place_result.get('preview').get('source')]
                 return []
 
+            if not place_result.get('name') or place_result.get('name') == '':
+                continue
+
+            # NOTE: If there are no images, skip this activity
+            if not get_images():
+                continue
+
             Activity.objects.update_or_create(
                 migration_data__xid=place_id,
                 defaults=dict(
