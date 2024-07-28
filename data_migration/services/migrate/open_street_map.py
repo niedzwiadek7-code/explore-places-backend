@@ -1,6 +1,7 @@
 from activities.models import Activity
-from data_migration.models import OpenTripMapServiceData, DataMigrationResource
+from data_migration.models import OpenTripMapServiceData
 from data_migration.services.migrate.base import DataMigrationService
+from services.api_service import APIService
 import requests
 import json
 import logging
@@ -11,19 +12,10 @@ class OpenStreetMapMigrationService(DataMigrationService):
         self.base_url = credentials.base_url
         self.api_key = credentials.credentials.get('api_key')
         self.logger = logging.getLogger(__name__)
+        self.api_service = APIService(self.base_url)
 
     def required_arguments(self):
         return ['min_lat', 'max_lat', 'min_lon', 'max_lon']
-
-    def make_request(self, method='GET', url=None, data=None):
-        requests.request(
-            method=method,
-            url=url,
-            data=data
-        )
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.content
 
     def migrate(self, args):
         min_lat = args.get('min_lat')
@@ -31,22 +23,29 @@ class OpenStreetMapMigrationService(DataMigrationService):
         min_lon = args.get('min_lon')
         max_lon = args.get('max_lon')
 
-        places_json = self.make_request(
+        places_result = self.api_service.request(
             method='GET',
-            url=f'{self.base_url}/places/bbox?lon_min={min_lon}&lon_max={max_lon}&lat_min={min_lat}&lat_max={max_lat}'
-                f'&apikey={self.api_key}'
+            endpoint=f'/places/bbox',
+            query_params=dict(
+                lon_min=min_lon,
+                lon_max=max_lon,
+                lat_min=min_lat,
+                lat_max=max_lat,
+                apikey=self.api_key
+            )
         )
 
-        places_result = json.loads(places_json).get('features')
-        places_ids = list(map(lambda x: x.get('properties').get('xid'), places_result))
+        places_ids = list(map(lambda x: x.get('properties').get('xid'), places_result.get('features')))
         self.logger.info(f'Found {len(places_ids)} places')
 
         for place_id in places_ids:
-            place_json = self.make_request(
+            place_result = self.api_service.request(
                 method='GET',
-                url=f'{self.base_url}/places/xid/{place_id}?apikey={self.api_key}'
+                endpoint=f'/places/xid/{place_id}',
+                query_params=dict(
+                    apikey=self.api_key
+                )
             )
-            place_result = json.loads(place_json)
 
             def get_images():
                 if place_result.get('preview') and place_result.get('preview').get('source'):

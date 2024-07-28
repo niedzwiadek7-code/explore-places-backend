@@ -190,7 +190,10 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {
-        "console": {"class": "logging.StreamHandler"},
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
         "file": {
             "class": "logging.FileHandler",
             "filename": "general.log",
@@ -205,7 +208,7 @@ LOGGING = {
     },
     "formatters": {
         "verbose": {
-            "format": "{asctime} ({levelname})- {name}- {message}",
+            "format": "{asctime} ({levelname})- [{name}:{lineno}]- {message}",
             "style": "{",
         }
     },
