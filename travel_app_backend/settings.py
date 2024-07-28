@@ -185,6 +185,7 @@ EMAIL_HOST_PASSWORD = environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # TODO: Publishing notes - improve logging settings
+# TODO: for each command generate a new file
 # Logging settings
 LOGGING = {
     "version": 1,

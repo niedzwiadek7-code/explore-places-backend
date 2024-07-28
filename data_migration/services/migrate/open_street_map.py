@@ -38,6 +38,7 @@ class OpenStreetMapMigrationService(DataMigrationService):
         places_ids = list(map(lambda x: x.get('properties').get('xid'), places_result.get('features')))
         self.logger.info(f'Found {len(places_ids)} places')
 
+        # TODO: make all requests at the same time
         for place_id in places_ids:
             place_result = self.api_service.request(
                 method='GET',

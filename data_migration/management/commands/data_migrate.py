@@ -48,6 +48,7 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **kwargs):
+        # TODO: move here database logic (if it possible)
         self.logger.info('Starting data migration...')
         try:
             self.service_instance.migrate(kwargs)

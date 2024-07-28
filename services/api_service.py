@@ -21,6 +21,7 @@ class APIService:
             self.logger.error(f"Error while fetching data from {self.base_url + endpoint}: {e}")
 
     def request(self, method, endpoint, query_params=None, data=None):
+        # TODO: for each request generate a new uuid
         try:
             if query_params:
                 endpoint += "?" + "&".join([f"{k}={v}" for k, v in query_params.items()])
