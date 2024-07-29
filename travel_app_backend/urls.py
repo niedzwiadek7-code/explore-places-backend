@@ -16,12 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
 
-from activities.views import CustomTokenObtainPairView, CustomTokenRefreshView, SendVerificationCode, verify_verification_code
+from activities.views import CustomTokenObtainPairView, CustomTokenRefreshView, SendVerificationCode, \
+    verify_verification_code, get_some_activities
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,4 +27,5 @@ urlpatterns = [
     path('api/token/refresh', CustomTokenRefreshView.as_view(), name='token_refresh'),
     path('api/send-verification-code/', SendVerificationCode.as_view(), name='send-verification-code'),
     path('api/verify-code/', verify_verification_code, name='verify-code'),
+    path('api/get-activities/', get_some_activities, name='get-activities'),
 ]

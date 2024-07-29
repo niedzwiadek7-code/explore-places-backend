@@ -1,8 +1,5 @@
 from django.core.mail import send_mail
-from django.urls import reverse
 from django.utils.crypto import get_random_string
-from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -12,8 +9,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from travel_app_backend import settings
-from .models import User, Activity, VerificationCode
-from .serializers import UserSerializer, ActivitySerializer
+from .models import User, Activity, VerificationCode, ActivityView, ActivityLike, ActivitySave
+from .serializers import UserSerializer, ActivitySerializer, ActivityLikeSerializer, ActivitySaveSerializer
+
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -87,3 +85,26 @@ def verify_verification_code(request):
 
     except VerificationCode.DoesNotExist:
         return Response({'message': 'Invalid code'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_some_activities(request):
+    activities_viewed = ActivityView.objects.filter(user=request.user)
+    activities_viewed_ids = [activity_view.activity.id for activity_view in activities_viewed]
+    activities = Activity.objects.exclude(id__in=activities_viewed_ids)[:10]
+
+    for activity in activities:
+        ActivityView.objects.create(
+            user=request.user,
+            activity=activity
+        )
+
+    serializer = ActivitySerializer(activities, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+class ActivityLikeViewSet(viewsets.ModelViewSet):
+    queryset = ActivityLike.objects.all()
+    serializer_class = ActivityLikeSerializer
+
+class ActivitySaveViewSet(viewsets.ModelViewSet):
+    queryset = ActivitySave.objects.all()
+    serializer_class = ActivitySaveSerializer
