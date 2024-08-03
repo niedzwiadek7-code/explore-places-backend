@@ -88,9 +88,10 @@ def verify_verification_code(request):
 
 @api_view(['GET'])
 def get_some_activities(request):
+    count_to_get = int(request.query_params.get('count', 10))
     activities_viewed = ActivityView.objects.filter(user=request.user)
     activities_viewed_ids = [activity_view.activity.id for activity_view in activities_viewed]
-    activities = Activity.objects.exclude(id__in=activities_viewed_ids)[:10]
+    activities = Activity.objects.exclude(id__in=activities_viewed_ids)[:count_to_get]
 
     for activity in activities:
         ActivityView.objects.create(
