@@ -2,9 +2,8 @@ from activities.models import Activity
 from data_migration.models import OpenTripMapServiceData
 from data_migration.services.migrate.base import DataMigrationService
 from services.api_service import APIService
-import requests
-import json
 import logging
+from time import sleep
 
 
 class OpenStreetMapMigrationService(DataMigrationService):
@@ -38,8 +37,12 @@ class OpenStreetMapMigrationService(DataMigrationService):
         places_ids = list(map(lambda x: x.get('properties').get('xid'), places_result.get('features')))
         self.logger.info(f'Found {len(places_ids)} places')
 
+        i = 0
         # TODO: make all requests at the same time
         for place_id in places_ids:
+            sleep(.12)
+            i += 1
+            self.logger.info(f'Processing place {i}/{len(places_ids)}')
             place_result = self.api_service.request(
                 method='GET',
                 endpoint=f'/places/xid/{place_id}',

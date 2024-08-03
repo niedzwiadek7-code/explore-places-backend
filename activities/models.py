@@ -1,6 +1,26 @@
 from django.contrib.auth.models import BaseUserManager
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from transformers import pipeline
+import logging
+
+classifier = pipeline("text-classification", model="distilbert-base-uncased")
+
+
+def classify_activity(name, description):
+    logger = logging.getLogger(__name__)
+    text = f"{name}. {description}"
+    result = classifier(text)[0]
+    result = classifier(text)[0]
+    logger.error(f"Classification result: {result}")  # Debugowanie wyników klasyfikacji
+    label_map = {
+        "LABEL_0": "atrakcja",
+        "LABEL_1": "restauracja",
+        "LABEL_2": "podróż",
+        "LABEL_3": "zakwaterowanie"
+    }
+    return label_map.get(result['label'], "unknown")
+
 
 class UserManager(BaseUserManager):
     def create_user(self, username, email, password=None, **extra_fields):
@@ -16,6 +36,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         return self.create_user(username, email, password, **extra_fields)
+
 
 # TODO: improve user parameter to AbstractUser
 class User(models.Model):
@@ -35,6 +56,7 @@ class User(models.Model):
     def __str__(self):
         return self.username
 
+
 class VerificationCode(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     code = models.CharField(max_length=6)
@@ -42,6 +64,7 @@ class VerificationCode(models.Model):
 
     def __str__(self):
         return f"${self.user.username}' - {self.code}"
+
 
 class Activity(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
@@ -57,6 +80,7 @@ class Activity(models.Model):
     postal_code = models.CharField(max_length=250, null=True)
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
+    activity_type = models.CharField(max_length=50, default='unknown')
 
     # def liked(self):
     #     return ActivityLike.objects.filter(activity=self).count()
@@ -67,8 +91,13 @@ class Activity(models.Model):
     # def views(self):
     #     return ActivityView.objects.filter(activity=self).count()
 
+    def save(self, *args, **kwargs):
+        self.activity_type = classify_activity(self.name, self.description)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.name
+
 
 class ActivityLike(models.Model):
     activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
@@ -77,6 +106,7 @@ class ActivityLike(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.activity.name}"
+
 
 class ActivityComment(models.Model):
     activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
@@ -87,6 +117,7 @@ class ActivityComment(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.activity.name}"
 
+
 class ActivityView(models.Model):
     activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -94,6 +125,7 @@ class ActivityView(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.activity.name}"
+
 
 class ActivitySave(models.Model):
     activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
