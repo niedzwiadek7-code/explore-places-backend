@@ -128,3 +128,11 @@ class ActivityLikeViewSet(viewsets.ModelViewSet):
 class ActivitySaveViewSet(viewsets.ModelViewSet):
     queryset = ActivitySave.objects.all()
     serializer_class = ActivitySaveSerializer
+
+@api_view(['GET'])
+def get_liked_activities(request):
+    user = request.user
+    liked_activities = ActivityLike.objects.filter(user=user).select_related('activity')
+    activities = [like.activity for like in liked_activities]
+    serializer = ActivitySerializer(activities, many=True, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
