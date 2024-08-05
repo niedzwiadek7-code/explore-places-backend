@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 
 from activities.views import CustomTokenObtainPairView, CustomTokenRefreshView, SendVerificationCode, \
-    verify_verification_code, get_some_activities
+    verify_verification_code, get_some_activities, like_activity, unlike_activity
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,4 +28,6 @@ urlpatterns = [
     path('api/send-verification-code/', SendVerificationCode.as_view(), name='send-verification-code'),
     path('api/verify-code/', verify_verification_code, name='verify-code'),
     path('api/get-activities/', get_some_activities, name='get-activities'),
+    path('api/like-activity/<str:activity_id>/', like_activity, name='like-activity'),
+    path('api/unlike-activity/<str:activity_id>/', unlike_activity, name='unlike-activity'),
 ]

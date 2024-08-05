@@ -39,6 +39,11 @@ class ActivityViewSet(viewsets.ModelViewSet):
     queryset = Activity.objects.all()
     serializer_class = ActivitySerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
 class SendVerificationCode(APIView):
     def post(self, request):
         email = request.data.get('email')
@@ -86,6 +91,20 @@ def verify_verification_code(request):
     except VerificationCode.DoesNotExist:
         return Response({'message': 'Invalid code'}, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['POST'])
+def like_activity(request, activity_id):
+    activity = Activity.objects.get(id=activity_id)
+    ActivityLike.objects.create(
+        user=request.user,
+        activity=activity
+    )
+    return Response({'message': 'Activity liked'}, status=status.HTTP_200_OK)
+
+def unlike_activity(request, activity_id):
+    activity = Activity.objects.get(id=activity_id)
+    ActivityLike.objects.filter(user=request.user, activity=activity).delete()
+    return Response({'message': 'Activity unliked'}, status=status.HTTP_200_OK)
+
 @api_view(['GET'])
 def get_some_activities(request):
     count_to_get = int(request.query_params.get('count', 10))
@@ -99,7 +118,7 @@ def get_some_activities(request):
             activity=activity
         )
 
-    serializer = ActivitySerializer(activities, many=True)
+    serializer = ActivitySerializer(activities, many=True, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 class ActivityLikeViewSet(viewsets.ModelViewSet):
