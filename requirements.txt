@@ -9,3 +9,14 @@ python-decouple==3.8
 sqlparse==0.5.0
 tzdata==2024.1
 requests~=2.32.3
+
+pip~=24.1.2
+numpy~=2.0.1
+certifi~=2024.7.4
+geodesk~=0.1.10
+shapely~=2.0.5
+urllib3~=2.2.2
+h2~=3.2.0
+idna~=2.10
+chardet~=3.0.4
+googletrans~=4.0.0rc1

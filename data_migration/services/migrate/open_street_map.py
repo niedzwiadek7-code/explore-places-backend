@@ -2,8 +2,7 @@ from activities.models import Activity
 from data_migration.models import OpenTripMapServiceData
 from data_migration.services.migrate.base import DataMigrationService
 from services.api_service import APIService
-import requests
-import json
+from googletrans import Translator
 import logging
 
 
@@ -40,8 +39,11 @@ class OpenStreetMapMigrationService(DataMigrationService):
         places_ids = list(map(lambda x: x.get('properties').get('xid'), places_result.get('features')))
         self.logger.info(f'Found {len(places_ids)} places')
 
+        i = 0
         # TODO: make all requests at the same time
         for place_id in places_ids:
+            i += 1
+            self.logger.info(f'Processing place {i}/{len(places_ids)}')
             place_result = self.api_service.request(
                 method='GET',
                 endpoint=f'/places/xid/{place_id}',
@@ -73,11 +75,29 @@ class OpenStreetMapMigrationService(DataMigrationService):
             if not get_images():
                 continue
 
+            def translate_text(text, dest_lang='pl'):
+                translator = Translator()
+                if text:
+                    try:
+                        translation = translator.translate(text, dest=dest_lang)
+                        return translation.text
+                    except Exception as e:
+                        return text
+                return text
+
+            def get_translated_description():
+                description=place_result.get('wikipedia_extracts') and place_result.get('wikipedia_extracts').get('text')
+                return translate_text(description)
+
+            def get_translated_tags():
+                tags = get_tags()
+                return [translate_text(tag) for tag in tags]
+
             Activity.objects.update_or_create(
                 migration_data__xid=place_id,
                 defaults=dict(
                     name=place_result.get('name'),
-                    description=place_result.get('wikipedia_extracts') and place_result.get('wikipedia_extracts').get('text'),
+                    description=get_translated_description(),
                     migration_data=dict(
                         xid=place_id,
                     ),
@@ -92,7 +112,7 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     longitude=place_result.get('point').get('lon'),
                     wikipedia_url=place_result.get('wikipedia'),
                     website_url=place_result.get('url'),
-                    tags=get_tags()
+                    tags=get_translated_tags()
                 )
             )
             self.logger.info(f'Created activity {place_result.get("name")} with xid {place_id}')
