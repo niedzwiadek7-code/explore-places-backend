@@ -57,6 +57,15 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     return [place_result.get('image')]
                 return []
 
+            def format_tag(tag):
+                return tag.replace('_', ' ').capitalize()
+
+            def get_tags():
+                if place_result.get('kinds'):
+                    tags = place_result.get('kinds').split(',')
+                    return list(map(format_tag, tags))
+                return []
+
             if not place_result.get('name') or place_result.get('name') == '':
                 continue
 
@@ -83,6 +92,7 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     longitude=place_result.get('point').get('lon'),
                     wikipedia_url=place_result.get('wikipedia'),
                     website_url=place_result.get('url'),
+                    tags=get_tags()
                 )
             )
             self.logger.info(f'Created activity {place_result.get("name")} with xid {place_id}')

@@ -61,6 +61,8 @@ class Activity(models.Model):
     wikipedia_url = models.URLField(null=True)
     website_url = models.URLField(null=True)
 
+    tags = ArrayField(models.CharField(max_length=250), blank=True, default=list)
+
     # def liked(self):
     #     return ActivityLike.objects.filter(activity=self).count()
 
