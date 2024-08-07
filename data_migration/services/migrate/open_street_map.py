@@ -31,7 +31,9 @@ class OpenStreetMapMigrationService(DataMigrationService):
                 lon_max=max_lon,
                 lat_min=min_lat,
                 lat_max=max_lat,
-                apikey=self.api_key
+                apikey=self.api_key,
+                rate=3,
+                kinds=f'interesting_places,amusements,adult,foods,transport,accomodations'.replace(',', '%2C')
             )
         )
 
@@ -51,6 +53,8 @@ class OpenStreetMapMigrationService(DataMigrationService):
             def get_images():
                 if place_result.get('preview') and place_result.get('preview').get('source'):
                     return [place_result.get('preview').get('source')]
+                if place_result.get('image'):
+                    return [place_result.get('image')]
                 return []
 
             if not place_result.get('name') or place_result.get('name') == '':
@@ -77,6 +81,8 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     postal_code=place_result.get('address').get('postcode'),
                     latitude=place_result.get('point').get('lat'),
                     longitude=place_result.get('point').get('lon'),
+                    wikipedia_url=place_result.get('wikipedia'),
+                    website_url=place_result.get('url'),
                 )
             )
             self.logger.info(f'Created activity {place_result.get("name")} with xid {place_id}')

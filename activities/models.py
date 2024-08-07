@@ -58,6 +58,9 @@ class Activity(models.Model):
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
 
+    wikipedia_url = models.URLField(null=True)
+    website_url = models.URLField(null=True)
+
     # def liked(self):
     #     return ActivityLike.objects.filter(activity=self).count()
 
