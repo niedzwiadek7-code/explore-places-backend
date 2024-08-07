@@ -132,7 +132,7 @@ class ActivitySaveViewSet(viewsets.ModelViewSet):
 @api_view(['GET'])
 def get_liked_activities(request):
     user = request.user
-    liked_activities = ActivityLike.objects.filter(user=user).select_related('activity')
+    liked_activities = ActivityLike.objects.filter(user=user).select_related('activity').order_by('-created_at')
     activities = [like.activity for like in liked_activities]
     serializer = ActivitySerializer(activities, many=True, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
