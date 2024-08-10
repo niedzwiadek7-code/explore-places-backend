@@ -17,18 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-from activities.views import CustomTokenObtainPairView, CustomTokenRefreshView, SendVerificationCode, \
-    verify_verification_code, get_some_activities, like_activity, unlike_activity, get_liked_activities
-
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('activities.urls')),
-    path('api/token', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh', CustomTokenRefreshView.as_view(), name='token_refresh'),
-    path('api/send-verification-code/', SendVerificationCode.as_view(), name='send-verification-code'),
-    path('api/verify-code/', verify_verification_code, name='verify-code'),
-    path('api/get-activities/', get_some_activities, name='get-activities'),
-    path('api/like-activity/<str:activity_id>/', like_activity, name='like-activity'),
-    path('api/unlike-activity/<str:activity_id>/', unlike_activity, name='unlike-activity'),
-    path('api/liked-activities/', get_liked_activities, name='liked-activities'),
+    path('api/activities/', include('activities.urls')),
+    path('api/accounts/', include('accounts.urls')),
 ]

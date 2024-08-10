@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'activities',
     'corsheaders',
-    'data_migration'
+    'data_migration',
+    'accounts'
 ]
 
 REST_FRAMEWORK = {
@@ -72,7 +73,7 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
-AUTH_USER_MODEL = 'activities.User'
+AUTH_USER_MODEL = 'accounts.User'
 
 # Middleware settings
 MIDDLEWARE = [
