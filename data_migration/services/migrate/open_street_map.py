@@ -1,4 +1,4 @@
-from activities.models import Entity as ActivityEntity
+from activities.models import Entity as ActivityEntity, Address, Coordinates, ExternalLinks
 from data_migration.models import OpenTripMap as OpenTripMapServiceData
 from data_migration.services.migrate.base import DataMigrationService
 from services.api_service import APIService
@@ -86,12 +86,31 @@ class OpenStreetMapMigrationService(DataMigrationService):
                 return text
 
             def get_translated_description():
-                description=place_result.get('wikipedia_extracts') and place_result.get('wikipedia_extracts').get('text')
+                description = place_result.get('wikipedia_extracts') and place_result.get('wikipedia_extracts').get('text')
                 return translate_text(description)
 
             def get_translated_tags():
                 tags = get_tags()
                 return [translate_text(tag) for tag in tags]
+
+            address, _ = Address.objects.update_or_create(
+                street=
+                f'{place_result.get('address').get('road')} {place_result.get('address').get('house_number') or ''}',
+                city=place_result.get('address').get('town'),
+                state=place_result.get('address').get('state'),
+                country=place_result.get('address').get('country'),
+                postal_code=place_result.get('address').get('postcode'),
+            )
+
+            coordinates, _ = Coordinates.objects.update_or_create(
+                latitude=place_result.get('point').get('lat'),
+                longitude=place_result.get('point').get('lon'),
+            )
+
+            external_links, _ = ExternalLinks.objects.update_or_create(
+                wikipedia_url=place_result.get('wikipedia'),
+                website_url=place_result.get('url'),
+            )
 
             ActivityEntity.objects.update_or_create(
                 migration_data__xid=place_id,
@@ -103,15 +122,9 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     ),
                     images=get_images(),
                     destination_resource='open_street_map',
-                    address=f'{place_result.get('address').get('road')} {place_result.get('address').get('house_number')}',
-                    city=place_result.get('address').get('town'),
-                    state=place_result.get('address').get('state'),
-                    country=place_result.get('address').get('country'),
-                    postal_code=place_result.get('address').get('postcode'),
-                    latitude=place_result.get('point').get('lat'),
-                    longitude=place_result.get('point').get('lon'),
-                    wikipedia_url=place_result.get('wikipedia'),
-                    website_url=place_result.get('url'),
+                    address=address,
+                    coordinates=coordinates,
+                    external_links=external_links,
                     tags=get_translated_tags()
                 )
             )
