@@ -1,5 +1,6 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 
 from .models import Entity as ActivityEntity, View as ActivityView, Like as ActivityLike, Save as ActivitySave
@@ -40,12 +41,6 @@ def get_some_activities(request):
     activities_viewed_ids = [activity_view.activity.id for activity_view in activities_viewed]
     activities = ActivityEntity.objects.exclude(id__in=activities_viewed_ids)[:count_to_get]
 
-    for activity in activities:
-        ActivityView.objects.create(
-            user=request.user,
-            activity=activity
-        )
-
     serializer = ActivitySerializer(activities, many=True, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -67,3 +62,17 @@ def get_liked_activities(request):
     activities = [like.activity for like in liked_activities]
     serializer = ActivitySerializer(activities, many=True, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@parser_classes((JSONParser,))
+def track_views(request):
+    activities = request.data.get('activityIds', [])
+
+    for activity_id in activities:
+        ActivityView.objects.create(
+            user=request.user,
+            activity=ActivityEntity.objects.get(id=activity_id)
+        )
+
+    return Response({'message': 'Activity saved'}, status=status.HTTP_200_OK)
