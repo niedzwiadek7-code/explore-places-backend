@@ -28,7 +28,7 @@ SECRET_KEY = environ.get('SECRET_KEY')
 DEBUG = environ.get('DEBUG') == 'True'
 
 ALLOWED_HOSTS = environ.get('ALLOWED_HOSTS').split(',')
-
+print(ALLOWED_HOSTS)
 
 # Application definition
 
@@ -126,6 +126,7 @@ WSGI_APPLICATION = 'travel_app_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
+        # 'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': environ.get('DB_NAME'),
         'USER': environ.get('DB_USER'),
         'PASSWORD': environ.get('DB_PASSWORD'),
@@ -196,15 +197,18 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
-        "file": {
-            "class": "logging.FileHandler",
-            "filename": "general.log",
-            "formatter": "verbose",
-        },
+        # "file": {
+        #     "class": "logging.FileHandler",
+        #     "filename": "general.log",
+        #     "formatter": "verbose",
+        # },
     },
     "loggers": {
         "": {
-            "handlers": ["console", "file"],
+            "handlers": [
+                "console",
+                # "file"
+            ],
             "level": environ.get("DJANGO_LOG_LEVEL", "INFO"),
         }
     },
