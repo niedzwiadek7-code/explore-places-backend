@@ -1,14 +1,13 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Activity, ActivityView, ActivityLike, ActivitySave
+from .models import Entity as ActivityEntity, View as ActivityView, Like as ActivityLike, Save as ActivitySave
 from .serializers import ActivitySerializer, ActivityLikeSerializer, ActivitySaveSerializer
 
 
 class ActivityViewSet(viewsets.ModelViewSet):
-    queryset = Activity.objects.all()
+    queryset = ActivityEntity.objects.all()
     serializer_class = ActivitySerializer
 
     def get_serializer_context(self):
@@ -19,7 +18,7 @@ class ActivityViewSet(viewsets.ModelViewSet):
 
 @api_view(['POST'])
 def like_activity(request, activity_id):
-    activity = Activity.objects.get(id=activity_id)
+    activity = ActivityEntity.objects.get(id=activity_id)
     ActivityLike.objects.create(
         user=request.user,
         activity=activity
@@ -27,8 +26,9 @@ def like_activity(request, activity_id):
     return Response({'message': 'Activity liked'}, status=status.HTTP_200_OK)
 
 
+@api_view(['POST'])
 def unlike_activity(request, activity_id):
-    activity = Activity.objects.get(id=activity_id)
+    activity = ActivityEntity.objects.get(id=activity_id)
     ActivityLike.objects.filter(user=request.user, activity=activity).delete()
     return Response({'message': 'Activity unliked'}, status=status.HTTP_200_OK)
 
@@ -38,7 +38,7 @@ def get_some_activities(request):
     count_to_get = int(request.query_params.get('count', 10))
     activities_viewed = ActivityView.objects.filter(user=request.user)
     activities_viewed_ids = [activity_view.activity.id for activity_view in activities_viewed]
-    activities = Activity.objects.exclude(id__in=activities_viewed_ids)[:count_to_get]
+    activities = ActivityEntity.objects.exclude(id__in=activities_viewed_ids)[:count_to_get]
 
     for activity in activities:
         ActivityView.objects.create(

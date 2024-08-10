@@ -18,7 +18,7 @@ class UserManager(BaseUserManager):
 
 
 # TODO: improve user parameter to AbstractUser
-class User(models.Model):
+class Entity(models.Model):
     email = models.CharField(max_length=250, unique=True, null=False, blank=False)
     account_verified = models.BooleanField(default=False)
     username = models.CharField(max_length=250, unique=True)
@@ -36,7 +36,7 @@ class User(models.Model):
         return self.username
 
 class VerificationCode(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(Entity, on_delete=models.CASCADE)
     code = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
 

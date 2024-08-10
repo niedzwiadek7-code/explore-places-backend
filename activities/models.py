@@ -1,11 +1,11 @@
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
-from accounts.models import User
+from accounts.models import Entity as UserEntity
 
 
-class Activity(models.Model):
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+class Entity(models.Model):
+    owner = models.ForeignKey(UserEntity, on_delete=models.CASCADE, null=True)
     name = models.CharField(max_length=250)
     description = models.TextField(null=True)
     images = ArrayField(models.URLField(), blank=True, default=list)
@@ -27,34 +27,34 @@ class Activity(models.Model):
     def __str__(self):
         return self.name
 
-class ActivityLike(models.Model):
-    activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+class Like(models.Model):
+    activity = models.ForeignKey(Entity, on_delete=models.CASCADE)
+    user = models.ForeignKey(UserEntity, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.user.username} - {self.activity.name}"
 
-class ActivityComment(models.Model):
-    activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+class Comment(models.Model):
+    activity = models.ForeignKey(Entity, on_delete=models.CASCADE)
+    user = models.ForeignKey(UserEntity, on_delete=models.CASCADE)
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.user.username} - {self.activity.name}"
 
-class ActivityView(models.Model):
-    activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+class View(models.Model):
+    activity = models.ForeignKey(Entity, on_delete=models.CASCADE)
+    user = models.ForeignKey(UserEntity, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.user.username} - {self.activity.name}"
 
-class ActivitySave(models.Model):
-    activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+class Save(models.Model):
+    activity = models.ForeignKey(Entity, on_delete=models.CASCADE)
+    user = models.ForeignKey(UserEntity, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

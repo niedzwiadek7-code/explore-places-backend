@@ -1,5 +1,5 @@
-from activities.models import Activity
-from data_migration.models import OpenTripMapServiceData
+from activities.models import Entity as ActivityEntity
+from data_migration.models import OpenTripMap as OpenTripMapServiceData
 from data_migration.services.migrate.base import DataMigrationService
 from services.api_service import APIService
 from googletrans import Translator
@@ -93,7 +93,7 @@ class OpenStreetMapMigrationService(DataMigrationService):
                 tags = get_tags()
                 return [translate_text(tag) for tag in tags]
 
-            Activity.objects.update_or_create(
+            ActivityEntity.objects.update_or_create(
                 migration_data__xid=place_id,
                 defaults=dict(
                     name=place_result.get('name'),

@@ -1,12 +1,12 @@
 from rest_framework import serializers
-from .models import Activity, ActivityLike, ActivitySave
+from .models import Entity as ActivityEntity, Like as ActivityLike, Save as ActivitySave
 
 
 class ActivitySerializer(serializers.ModelSerializer):
     liked_by_user = serializers.SerializerMethodField()
 
     class Meta:
-        model = Activity
+        model = ActivityEntity
         fields = '__all__'
 
     def get_liked_by_user(self, obj):
@@ -20,6 +20,7 @@ class ActivityLikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = ActivityLike
         fields = '__all__'
+
 
 class ActivitySaveSerializer(serializers.ModelSerializer):
     class Meta:

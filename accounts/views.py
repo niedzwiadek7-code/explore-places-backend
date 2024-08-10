@@ -9,7 +9,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from travel_app_backend import settings
 from rest_framework.response import Response
 
-from accounts.models import User, VerificationCode
+from accounts.models import Entity as UserEntity, VerificationCode
 from accounts.serializers import UserSerializer
 
 
@@ -35,7 +35,7 @@ class CustomTokenRefreshView(TokenRefreshView):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    queryset = UserEntity.objects.all()
     serializer_class = UserSerializer
 
 
@@ -43,7 +43,7 @@ class SendVerificationCode(APIView):
     def post(self, request):
         email = request.data.get('email')
         try:
-            user = User.objects.get(email=email)
+            user = UserEntity.objects.get(email=email)
 
             try:
                 verification_code = VerificationCode.objects.get(user=user)
@@ -62,7 +62,7 @@ class SendVerificationCode(APIView):
 
             return Response({'message': 'Email sent'}, status=status.HTTP_200_OK)
 
-        except User.DoesNotExist:
+        except UserEntity.DoesNotExist:
             return Response({'message': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
 

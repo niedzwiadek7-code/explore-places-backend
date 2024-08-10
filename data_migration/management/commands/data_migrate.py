@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 import sys
 from django.db import transaction
 
-from data_migration.models import DataMigrationResource
+from data_migration.models import Resource as DataMigrationResource
 
 
 class Command(BaseCommand):

@@ -1,10 +1,12 @@
 from rest_framework import serializers
-from .models import OpenTripMapServiceData, DataMigrationResource
+from .models import OpenTripMap as OpenTripMapServiceData, Resource as DataMigrationResource
+
 
 class OpenTripMapServiceDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = OpenTripMapServiceData
         fields = '__all__'
+
 
 class DataMigrationResourceDataSerializer(serializers.ModelSerializer):
     class Meta:

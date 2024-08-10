@@ -1,12 +1,13 @@
 from django.db import models
 
 
-class DataMigrationResource(models.Model):
+class Resource(models.Model):
     name = models.CharField(max_length=250)
     base_url = models.URLField()
     credentials = models.JSONField(default=dict)
 
-class OpenTripMapServiceData(models.Model):
+
+class OpenTripMap(models.Model):
     min_longitude = models.FloatField()
     min_latitude = models.FloatField()
     max_longitude = models.FloatField()
