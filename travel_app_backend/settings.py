@@ -28,7 +28,6 @@ SECRET_KEY = environ.get('SECRET_KEY')
 DEBUG = environ.get('DEBUG') == 'True'
 
 ALLOWED_HOSTS = environ.get('ALLOWED_HOSTS').split(',')
-print(ALLOWED_HOSTS)
 
 # Application definition
 
@@ -182,6 +181,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = environ.get('EMAIL_HOST')
 EMAIL_PORT = environ.get('EMAIL_PORT')
 EMAIL_USE_TLS = environ.get('EMAIL_USE_TLS') == 'True'
+EMAIL_USE_SSL = environ.get('EMAIL_USE_SSL') == 'True'
 EMAIL_HOST_USER = environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
