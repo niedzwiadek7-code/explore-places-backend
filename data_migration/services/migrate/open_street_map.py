@@ -1,3 +1,6 @@
+import json
+import os
+
 from activities.models import Entity as ActivityEntity, Address, Coordinates, ExternalLinks
 from data_migration.models import OpenTripMap as OpenTripMapServiceData
 from data_migration.services.migrate.base import DataMigrationService
@@ -60,7 +63,15 @@ class OpenStreetMapMigrationService(DataMigrationService):
                 return []
 
             def format_tag(tag):
-                return tag.replace('_', ' ').capitalize()
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+                file_path = os.path.join(base_dir, 'open_street_map_tags.json')
+
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    dictionary = json.load(file)
+
+                if tag in dictionary:
+                    return dictionary[tag]
+                return tag
 
             def get_tags():
                 if place_result.get('kinds'):
@@ -88,10 +99,6 @@ class OpenStreetMapMigrationService(DataMigrationService):
             def get_translated_description():
                 description = place_result.get('wikipedia_extracts') and place_result.get('wikipedia_extracts').get('text')
                 return translate_text(description)
-
-            def get_translated_tags():
-                tags = get_tags()
-                return [translate_text(tag) for tag in tags]
 
             address, _ = Address.objects.update_or_create(
                 street=
@@ -125,7 +132,7 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     address=address,
                     coordinates=coordinates,
                     external_links=external_links,
-                    tags=get_translated_tags()
+                    tags=get_tags()
                 )
             )
             self.logger.info(f'Created activity {place_result.get("name")} with xid {place_id}')
