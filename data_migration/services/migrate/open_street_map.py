@@ -78,7 +78,6 @@ class OpenStreetMapMigrationService(DataMigrationService):
         await sync_to_async(save_migration_data)(min_lat, max_lat, min_lon, max_lon)
         self.logger.info(f'Saved migration data for lat: {min_lat}-{max_lat} and lon: {min_lon}-{max_lon}')
 
-    @transaction.atomic
     async def process_place(self, place_id, index, total):
         try:
             async with self.semaphore:
@@ -133,44 +132,51 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     description = place_result.get('wikipedia_extracts', {}).get('text')
                     return translate_text(description)
 
-                # Use sync_to_async to interact with Django ORM
-                address, _ = await sync_to_async(Address.objects.update_or_create)(
-                    street=f'{place_result.get("address", {}).get("road", "")} {place_result.get("address", {}).get("house_number", "")}',
-                    city=place_result.get('address', {}).get('town'),
-                    state=place_result.get('address', {}).get('state'),
-                    country=place_result.get('address', {}).get('country'),
-                    postal_code=place_result.get('address', {}).get('postcode'),
-                )
+                # Synchronize the transaction context and ORM operations
+                @sync_to_async
+                def save_to_db():
+                    with transaction.atomic():
+                        address, _ = Address.objects.update_or_create(
+                            street=f'{place_result.get("address", {}).get("road", "")} {place_result.get("address", {}).get("house_number", "")}',
+                            city=place_result.get('address', {}).get('town'),
+                            state=place_result.get('address', {}).get('state'),
+                            country=place_result.get('address', {}).get('country'),
+                            postal_code=place_result.get('address', {}).get('postcode'),
+                        )
 
-                coordinates, _ = await sync_to_async(Coordinates.objects.update_or_create)(
-                    latitude=place_result.get('point', {}).get('lat'),
-                    longitude=place_result.get('point', {}).get('lon'),
-                )
+                        coordinates, _ = Coordinates.objects.update_or_create(
+                            latitude=place_result.get('point', {}).get('lat'),
+                            longitude=place_result.get('point', {}).get('lon'),
+                        )
 
-                external_links, _ = await sync_to_async(ExternalLinks.objects.update_or_create)(
-                    wikipedia_url=place_result.get('wikipedia'),
-                    website_url=place_result.get('url'),
-                )
+                        external_links, _ = ExternalLinks.objects.update_or_create(
+                            wikipedia_url=place_result.get('wikipedia'),
+                            website_url=place_result.get('url'),
+                        )
 
-                await sync_to_async(ActivityEntity.objects.update_or_create)(
-                    migration_data__xid=place_id,
-                    defaults=dict(
-                        name=place_result.get('name'),
-                        description=get_translated_description(),
-                        migration_data=dict(
-                            xid=place_id,
-                        ),
-                        images=get_images(),
-                        destination_resource='open_street_map',
-                        address=address,
-                        coordinates=coordinates,
-                        external_links=external_links,
-                        tags=get_tags()
-                    )
-                )
-                self.total_places += 1
+                        ActivityEntity.objects.update_or_create(
+                            migration_data__xid=place_id,
+                            defaults=dict(
+                                name=place_result.get('name'),
+                                description=get_translated_description(),
+                                migration_data=dict(
+                                    xid=place_id,
+                                ),
+                                images=get_images(),
+                                destination_resource='open_street_map',
+                                address=address,
+                                coordinates=coordinates,
+                                external_links=external_links,
+                                tags=get_tags()
+                            )
+                        )
+                        self.total_places += 1
+
+                # Call the synchronized save_to_db function
+                await save_to_db()
+
                 self.logger.info(f'Created activity {place_result.get("name")} with xid {place_id}')
 
         except Exception as e:
             self.logger.error(f'Error processing place {place_id}: {e}')
-            return
+#
