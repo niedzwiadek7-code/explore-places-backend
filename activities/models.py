@@ -24,8 +24,8 @@ class Coordinates(models.Model):
 
 
 class ExternalLinks(models.Model):
-    wikipedia_url = models.URLField(null=True)
-    website_url = models.URLField(null=True)
+    wikipedia_url = models.URLField(null=True, max_length=500)
+    website_url = models.URLField(null=True, max_length=500)
 
 
 class Entity(models.Model):
