@@ -49,7 +49,6 @@ class Command(BaseCommand):
             exit()
 
     @timeit_decorator
-    @transaction.atomic
     def handle(self, *args, **kwargs):
         # TODO: move here database logic (if it possible)
         self.logger.info('Starting data migration...')

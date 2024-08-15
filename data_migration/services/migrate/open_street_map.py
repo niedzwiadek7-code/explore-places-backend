@@ -1,3 +1,4 @@
+import numpy as np
 import json
 import os
 import asyncio
@@ -12,7 +13,7 @@ from googletrans import Translator
 import logging
 
 
-def save_migration_data(self, min_lat, max_lat, min_lon, max_lon):
+def save_migration_data(min_lat, max_lat, min_lon, max_lon):
     OpenTripMapServiceData.objects.create(
         min_latitude=min_lat,
         max_latitude=max_lat,
@@ -28,16 +29,31 @@ class OpenStreetMapMigrationService(DataMigrationService):
         self.logger = logging.getLogger(__name__)
         self.api_service = APIService(self.base_url)
         self.semaphore = Semaphore(10)  # Limit to 10 concurrent requests
+        self.total_migration_steps = 0
+        self.total_places = 0
 
     def required_arguments(self):
         return ['min_lat', 'max_lat', 'min_lon', 'max_lon']
 
     async def migrate(self, args):
-        min_lat = args.get('min_lat')
-        max_lat = args.get('max_lat')
-        min_lon = args.get('min_lon')
-        max_lon = args.get('max_lon')
+        min_lat = float(args.get('min_lat'))
+        max_lat = float(args.get('max_lat'))
+        min_lon = float(args.get('min_lon'))
+        max_lon = float(args.get('max_lon'))
 
+        step_lat = 0.05
+        step_lon = 0.1
+
+        for lat in np.arange(min_lat, max_lat, step_lat):
+            for lon in np.arange(min_lon, max_lon, step_lon):
+                await self.step(lat, lat + step_lat, lon, lon + step_lon)
+
+        self.logger.info(f'Total migration steps: {self.total_migration_steps}')
+        self.logger.info(f'Total places migrated: {self.total_places}')
+
+    async def step(self, min_lat, max_lat, min_lon, max_lon):
+        self.total_migration_steps += 1
+        self.logger.info(f'Processing step with lat: {min_lat}-{max_lat} and lon: {min_lon}-{max_lon}')
         places_result = self.api_service.request(
             method='GET',
             endpoint=f'/places/bbox',
@@ -60,93 +76,101 @@ class OpenStreetMapMigrationService(DataMigrationService):
 
         # Ensure the migration data is saved outside of async context
         await sync_to_async(save_migration_data)(min_lat, max_lat, min_lon, max_lon)
+        self.logger.info(f'Saved migration data for lat: {min_lat}-{max_lat} and lon: {min_lon}-{max_lon}')
 
+    @transaction.atomic
     async def process_place(self, place_id, index, total):
-        async with self.semaphore:
-            self.logger.info(f'Processing place {index}/{total}')
-            place_result = self.api_service.request(
-                method='GET',
-                endpoint=f'/places/xid/{place_id}',
-                query_params=dict(
-                    apikey=self.api_key
+        try:
+            async with self.semaphore:
+                self.logger.info(f'Processing place {index}/{total}')
+                place_result = self.api_service.request(
+                    method='GET',
+                    endpoint=f'/places/xid/{place_id}',
+                    query_params=dict(
+                        apikey=self.api_key
+                    )
                 )
-            )
 
-            def get_images():
-                if place_result.get('preview') and place_result.get('preview').get('source'):
-                    return [place_result.get('preview').get('source')]
-                if place_result.get('image'):
-                    return [place_result.get('image')]
-                return []
+                def get_images():
+                    if place_result.get('preview') and place_result.get('preview').get('source'):
+                        return [place_result.get('preview').get('source')]
+                    if place_result.get('image'):
+                        return [place_result.get('image')]
+                    return []
 
-            def format_tag(tag):
-                base_dir = os.path.dirname(os.path.abspath(__file__))
-                file_path = os.path.join(base_dir, 'open_street_map_tags.json')
+                def format_tag(tag):
+                    base_dir = os.path.dirname(os.path.abspath(__file__))
+                    file_path = os.path.join(base_dir, 'open_street_map_tags.json')
 
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    dictionary = json.load(file)
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        dictionary = json.load(file)
 
-                return dictionary.get(tag, tag)
+                    return dictionary.get(tag, tag)
 
-            def get_tags():
-                if place_result.get('kinds'):
-                    tags = place_result.get('kinds').split(',')
-                    return list(map(format_tag, tags))
-                return []
+                def get_tags():
+                    if place_result.get('kinds'):
+                        tags = place_result.get('kinds').split(',')
+                        return list(map(format_tag, tags))
+                    return []
 
-            if not place_result.get('name'):
-                return
+                if not place_result.get('name'):
+                    return
 
-            if not get_images():
-                return
+                if not get_images():
+                    return
 
-            def translate_text(text, dest_lang='pl'):
-                translator = Translator()
-                if text:
-                    try:
-                        translation = translator.translate(text, dest=dest_lang)
-                        return translation.text
-                    except Exception as e:
-                        return text
-                return text
+                def translate_text(text, dest_lang='pl'):
+                    translator = Translator()
+                    if text:
+                        try:
+                            translation = translator.translate(text, dest=dest_lang)
+                            return translation.text
+                        except Exception as e:
+                            return text
+                    return text
 
-            def get_translated_description():
-                description = place_result.get('wikipedia_extracts', {}).get('text')
-                return translate_text(description)
+                def get_translated_description():
+                    description = place_result.get('wikipedia_extracts', {}).get('text')
+                    return translate_text(description)
 
-            # Use sync_to_async to interact with Django ORM
-            address, _ = await sync_to_async(Address.objects.update_or_create)(
-                street=f'{place_result.get("address", {}).get("road", "")} {place_result.get("address", {}).get("house_number", "")}',
-                city=place_result.get('address', {}).get('town'),
-                state=place_result.get('address', {}).get('state'),
-                country=place_result.get('address', {}).get('country'),
-                postal_code=place_result.get('address', {}).get('postcode'),
-            )
-
-            coordinates, _ = await sync_to_async(Coordinates.objects.update_or_create)(
-                latitude=place_result.get('point', {}).get('lat'),
-                longitude=place_result.get('point', {}).get('lon'),
-            )
-
-            external_links, _ = await sync_to_async(ExternalLinks.objects.update_or_create)(
-                wikipedia_url=place_result.get('wikipedia'),
-                website_url=place_result.get('url'),
-            )
-
-            await sync_to_async(ActivityEntity.objects.update_or_create)(
-                migration_data__xid=place_id,
-                defaults=dict(
-                    name=place_result.get('name'),
-                    description=get_translated_description(),
-                    migration_data=dict(
-                        xid=place_id,
-                    ),
-                    images=get_images(),
-                    destination_resource='open_street_map',
-                    address=address,
-                    coordinates=coordinates,
-                    external_links=external_links,
-                    tags=get_tags()
+                # Use sync_to_async to interact with Django ORM
+                address, _ = await sync_to_async(Address.objects.update_or_create)(
+                    street=f'{place_result.get("address", {}).get("road", "")} {place_result.get("address", {}).get("house_number", "")}',
+                    city=place_result.get('address', {}).get('town'),
+                    state=place_result.get('address', {}).get('state'),
+                    country=place_result.get('address', {}).get('country'),
+                    postal_code=place_result.get('address', {}).get('postcode'),
                 )
-            )
-            self.logger.info(f'Created activity {place_result.get("name")} with xid {place_id}')
+
+                coordinates, _ = await sync_to_async(Coordinates.objects.update_or_create)(
+                    latitude=place_result.get('point', {}).get('lat'),
+                    longitude=place_result.get('point', {}).get('lon'),
+                )
+
+                external_links, _ = await sync_to_async(ExternalLinks.objects.update_or_create)(
+                    wikipedia_url=place_result.get('wikipedia'),
+                    website_url=place_result.get('url'),
+                )
+
+                await sync_to_async(ActivityEntity.objects.update_or_create)(
+                    migration_data__xid=place_id,
+                    defaults=dict(
+                        name=place_result.get('name'),
+                        description=get_translated_description(),
+                        migration_data=dict(
+                            xid=place_id,
+                        ),
+                        images=get_images(),
+                        destination_resource='open_street_map',
+                        address=address,
+                        coordinates=coordinates,
+                        external_links=external_links,
+                        tags=get_tags()
+                    )
+                )
+                self.total_places += 1
+                self.logger.info(f'Created activity {place_result.get("name")} with xid {place_id}')
+
+        except Exception as e:
+            self.logger.error(f'Error processing place {place_id}: {e}')
+            return
