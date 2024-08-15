@@ -5,6 +5,7 @@ import sys
 from django.db import transaction
 
 from data_migration.models import Resource as DataMigrationResource
+from utils.decorators.timeit_decorator import timeit_decorator
 
 
 class Command(BaseCommand):
@@ -46,6 +47,7 @@ class Command(BaseCommand):
             self.logger.error(f'Service {service_name} not found')
             exit()
 
+    @timeit_decorator
     @transaction.atomic
     def handle(self, *args, **kwargs):
         # TODO: move here database logic (if it possible)
