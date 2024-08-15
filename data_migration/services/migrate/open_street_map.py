@@ -54,6 +54,20 @@ class OpenStreetMapMigrationService(DataMigrationService):
     async def step(self, min_lat, max_lat, min_lon, max_lon):
         self.total_migration_steps += 1
         self.logger.info(f'Processing step with lat: {min_lat}-{max_lat} and lon: {min_lon}-{max_lon}')
+
+        @sync_to_async()
+        def was_processed():
+            return OpenTripMapServiceData.objects.filter(
+                min_latitude=min_lat,
+                max_latitude=max_lat,
+                min_longitude=min_lon,
+                max_longitude=max_lon
+            ).exists()
+
+        if await was_processed():
+            self.logger.info(f'Step with lat: {min_lat}-{max_lat} and lon: {min_lon}-{max_lon} was already processed')
+            return
+
         places_result = self.api_service.request(
             method='GET',
             endpoint=f'/places/bbox',
