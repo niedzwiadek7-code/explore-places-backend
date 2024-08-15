@@ -3,6 +3,7 @@ import importlib
 from django.core.management.base import BaseCommand
 import sys
 from django.db import transaction
+import asyncio
 
 from data_migration.models import Resource as DataMigrationResource
 from utils.decorators.timeit_decorator import timeit_decorator
@@ -53,7 +54,7 @@ class Command(BaseCommand):
         # TODO: move here database logic (if it possible)
         self.logger.info('Starting data migration...')
         try:
-            self.service_instance.migrate(kwargs)
+            asyncio.run(self.service_instance.migrate(kwargs))
             self.logger.info('Data migration completed successfully')
         except Exception as e:
             self.logger.error(f'Error during migration: {e}')

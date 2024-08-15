@@ -1,6 +1,9 @@
 import json
 import os
-
+import asyncio
+from asyncio import Semaphore
+from django.db import transaction
+from asgiref.sync import sync_to_async
 from activities.models import Entity as ActivityEntity, Address, Coordinates, ExternalLinks
 from data_migration.models import OpenTripMap as OpenTripMapServiceData
 from data_migration.services.migrate.base import DataMigrationService
@@ -9,17 +12,27 @@ from googletrans import Translator
 import logging
 
 
+def save_migration_data(self, min_lat, max_lat, min_lon, max_lon):
+    OpenTripMapServiceData.objects.create(
+        min_latitude=min_lat,
+        max_latitude=max_lat,
+        min_longitude=min_lon,
+        max_longitude=max_lon
+    )
+
+
 class OpenStreetMapMigrationService(DataMigrationService):
     def __init__(self, credentials=dict):
         self.base_url = credentials.base_url
         self.api_key = credentials.credentials.get('api_key')
         self.logger = logging.getLogger(__name__)
         self.api_service = APIService(self.base_url)
+        self.semaphore = Semaphore(10)  # Limit to 10 concurrent requests
 
     def required_arguments(self):
         return ['min_lat', 'max_lat', 'min_lon', 'max_lon']
 
-    def migrate(self, args):
+    async def migrate(self, args):
         min_lat = args.get('min_lat')
         max_lat = args.get('max_lat')
         min_lon = args.get('min_lon')
@@ -42,11 +55,15 @@ class OpenStreetMapMigrationService(DataMigrationService):
         places_ids = list(map(lambda x: x.get('properties').get('xid'), places_result.get('features')))
         self.logger.info(f'Found {len(places_ids)} places')
 
-        i = 0
-        # TODO: make all requests at the same time
-        for place_id in places_ids:
-            i += 1
-            self.logger.info(f'Processing place {i}/{len(places_ids)}')
+        tasks = [self.process_place(place_id, i + 1, len(places_ids)) for i, place_id in enumerate(places_ids)]
+        await asyncio.gather(*tasks)
+
+        # Ensure the migration data is saved outside of async context
+        await sync_to_async(save_migration_data)(min_lat, max_lat, min_lon, max_lon)
+
+    async def process_place(self, place_id, index, total):
+        async with self.semaphore:
+            self.logger.info(f'Processing place {index}/{total}')
             place_result = self.api_service.request(
                 method='GET',
                 endpoint=f'/places/xid/{place_id}',
@@ -69,9 +86,7 @@ class OpenStreetMapMigrationService(DataMigrationService):
                 with open(file_path, 'r', encoding='utf-8') as file:
                     dictionary = json.load(file)
 
-                if tag in dictionary:
-                    return dictionary[tag]
-                return tag
+                return dictionary.get(tag, tag)
 
             def get_tags():
                 if place_result.get('kinds'):
@@ -79,12 +94,11 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     return list(map(format_tag, tags))
                 return []
 
-            if not place_result.get('name') or place_result.get('name') == '':
-                continue
+            if not place_result.get('name'):
+                return
 
-            # NOTE: If there are no images, skip this activity
             if not get_images():
-                continue
+                return
 
             def translate_text(text, dest_lang='pl'):
                 translator = Translator()
@@ -97,29 +111,29 @@ class OpenStreetMapMigrationService(DataMigrationService):
                 return text
 
             def get_translated_description():
-                description = place_result.get('wikipedia_extracts') and place_result.get('wikipedia_extracts').get('text')
+                description = place_result.get('wikipedia_extracts', {}).get('text')
                 return translate_text(description)
 
-            address, _ = Address.objects.update_or_create(
-                street=
-                f'{place_result.get('address').get('road')} {place_result.get('address').get('house_number') or ''}',
-                city=place_result.get('address').get('town'),
-                state=place_result.get('address').get('state'),
-                country=place_result.get('address').get('country'),
-                postal_code=place_result.get('address').get('postcode'),
+            # Use sync_to_async to interact with Django ORM
+            address, _ = await sync_to_async(Address.objects.update_or_create)(
+                street=f'{place_result.get("address", {}).get("road", "")} {place_result.get("address", {}).get("house_number", "")}',
+                city=place_result.get('address', {}).get('town'),
+                state=place_result.get('address', {}).get('state'),
+                country=place_result.get('address', {}).get('country'),
+                postal_code=place_result.get('address', {}).get('postcode'),
             )
 
-            coordinates, _ = Coordinates.objects.update_or_create(
-                latitude=place_result.get('point').get('lat'),
-                longitude=place_result.get('point').get('lon'),
+            coordinates, _ = await sync_to_async(Coordinates.objects.update_or_create)(
+                latitude=place_result.get('point', {}).get('lat'),
+                longitude=place_result.get('point', {}).get('lon'),
             )
 
-            external_links, _ = ExternalLinks.objects.update_or_create(
+            external_links, _ = await sync_to_async(ExternalLinks.objects.update_or_create)(
                 wikipedia_url=place_result.get('wikipedia'),
                 website_url=place_result.get('url'),
             )
 
-            ActivityEntity.objects.update_or_create(
+            await sync_to_async(ActivityEntity.objects.update_or_create)(
                 migration_data__xid=place_id,
                 defaults=dict(
                     name=place_result.get('name'),
@@ -136,12 +150,3 @@ class OpenStreetMapMigrationService(DataMigrationService):
                 )
             )
             self.logger.info(f'Created activity {place_result.get("name")} with xid {place_id}')
-
-        OpenTripMapServiceData.objects.create(
-            min_latitude=min_lat,
-            max_latitude=max_lat,
-            min_longitude=min_lon,
-            max_longitude=max_lon
-        )
-
-        pass
