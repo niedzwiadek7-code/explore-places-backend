@@ -30,7 +30,7 @@ class OpenStreetMapMigrationService(DataMigrationService):
         self.api_key = credentials.credentials.get('api_key')
         self.logger = logging.getLogger(__name__)
         self.api_service = APIService(self.base_url)
-        self.semaphore = Semaphore(10)  # Limit to 10 concurrent requests
+        self.semaphore = Semaphore(5)  # Limit to 10 concurrent requests
         self.total_migration_steps = 0
         self.total_places = 0
 
