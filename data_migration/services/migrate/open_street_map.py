@@ -5,6 +5,8 @@ import asyncio
 from asyncio import Semaphore
 from django.db import transaction
 from asgiref.sync import sync_to_async
+from requests import RequestException
+
 from activities.models import Entity as ActivityEntity, Address, Coordinates, ExternalLinks
 from data_migration.models import OpenTripMap as OpenTripMapServiceData
 from data_migration.services.migrate.base import DataMigrationService
@@ -191,6 +193,10 @@ class OpenStreetMapMigrationService(DataMigrationService):
 
                 self.logger.info(f'Created activity {place_result.get("name")} with xid {place_id}')
 
-        except Exception as e:
+        except RequestException as e:
             self.logger.error(f'Error processing place {place_id}: {e}')
+            raise RequestException(e)
+
+        except Exception as err:
+            self.logger.error(f'Error processing place {place_id}: {err}')
 #

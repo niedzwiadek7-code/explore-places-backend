@@ -36,3 +36,4 @@ venv/
 # Programming environments
 .vscode/
 .idea/
+.vercel

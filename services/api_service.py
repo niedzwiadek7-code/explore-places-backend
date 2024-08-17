@@ -39,3 +39,4 @@ class APIService:
             return response.json()
         except RequestException as e:
             self.logger.error(f"Error while fetching data from {self.base_url + endpoint}: {e}")
+            raise RequestException(e)
