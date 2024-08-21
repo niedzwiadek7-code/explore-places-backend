@@ -6,7 +6,7 @@ __pycache__/
 local_settings.py
 
 # Environment variables #
-.env
+.env*
 env/
 
 # Django stuff:
@@ -36,4 +36,6 @@ venv/
 # Programming environments
 .vscode/
 .idea/
+
+# Vercel
 .vercel
