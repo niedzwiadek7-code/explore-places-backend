@@ -1,3 +1,4 @@
+from django.contrib.gis.db.models import PointField
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
@@ -15,14 +16,6 @@ class Address(models.Model):
         return f"{self.street}, {self.city}, {self.country}"
 
 
-class Coordinates(models.Model):
-    latitude = models.FloatField(null=True)
-    longitude = models.FloatField(null=True)
-
-    def __str__(self):
-        return f"{self.latitude}, {self.longitude}"
-
-
 class ExternalLinks(models.Model):
     wikipedia_url = models.URLField(null=True, max_length=500)
     website_url = models.URLField(null=True, max_length=500)
@@ -36,7 +29,7 @@ class Entity(models.Model):
     destination_resource = models.CharField(max_length=250, default='user')
     migration_data = models.JSONField(default=dict)
     address = models.ForeignKey(Address, on_delete=models.CASCADE, null=True)
-    coordinates = models.ForeignKey(Coordinates, on_delete=models.CASCADE, null=True)
+    point_field = PointField(null=True)
     external_links = models.ForeignKey(ExternalLinks, on_delete=models.CASCADE, null=True)
     tags = ArrayField(models.CharField(max_length=250), blank=True, default=list)
 

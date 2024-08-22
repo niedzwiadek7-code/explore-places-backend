@@ -6,8 +6,9 @@ from asyncio import Semaphore
 from django.db import transaction
 from asgiref.sync import sync_to_async
 from requests import RequestException
+from django.contrib.gis.geos import Point
 
-from activities.models import Entity as ActivityEntity, Address, Coordinates, ExternalLinks
+from activities.models import Entity as ActivityEntity, Address, ExternalLinks
 from data_migration.models import OpenTripMap as OpenTripMapServiceData
 from data_migration.services.migrate.base import DataMigrationService
 from services.api_service import APIService
@@ -148,6 +149,15 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     description = place_result.get('wikipedia_extracts', {}).get('text')
                     return translate_text(description)
 
+                def get_point_field():
+                    if place_result.get('point'):
+                        return Point(
+                            float(place_result.get('point').get('lon')),
+                            float(place_result.get('point').get('lat')),
+                            srid=4326
+                        )
+                    return None
+
                 # Synchronize the transaction context and ORM operations
                 @sync_to_async
                 def save_to_db():
@@ -158,11 +168,6 @@ class OpenStreetMapMigrationService(DataMigrationService):
                             state=place_result.get('address', {}).get('state'),
                             country=place_result.get('address', {}).get('country'),
                             postal_code=place_result.get('address', {}).get('postcode'),
-                        )
-
-                        coordinates, _ = Coordinates.objects.update_or_create(
-                            latitude=place_result.get('point', {}).get('lat'),
-                            longitude=place_result.get('point', {}).get('lon'),
                         )
 
                         external_links, _ = ExternalLinks.objects.update_or_create(
@@ -181,7 +186,7 @@ class OpenStreetMapMigrationService(DataMigrationService):
                                 images=get_images(),
                                 destination_resource='open_street_map',
                                 address=address,
-                                coordinates=coordinates,
+                                point_field=get_point_field(),
                                 external_links=external_links,
                                 tags=get_tags()
                             )

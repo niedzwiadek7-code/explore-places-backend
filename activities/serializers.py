@@ -1,17 +1,10 @@
 from rest_framework import serializers
-from .models import Entity as ActivityEntity, Like as ActivityLike, Save as ActivitySave, Address, Coordinates, \
-    ExternalLinks
+from .models import Entity as ActivityEntity, Like as ActivityLike, Save as ActivitySave, Address, ExternalLinks
 
 
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
-        fields = '__all__'
-
-
-class CoordinatesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Coordinates
         fields = '__all__'
 
 
@@ -24,7 +17,6 @@ class ExternalLinksSerializer(serializers.ModelSerializer):
 class ActivitySerializer(serializers.ModelSerializer):
     liked_by_user = serializers.SerializerMethodField()
     address = AddressSerializer(read_only=True)
-    coordinates = CoordinatesSerializer(read_only=True)
     external_links = ExternalLinksSerializer()
 
     class Meta:
