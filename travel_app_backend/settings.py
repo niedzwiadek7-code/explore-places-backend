@@ -43,8 +43,14 @@ INSTALLED_APPS = [
     'activities',
     'corsheaders',
     'data_migration',
-    'accounts'
+    'accounts',
+    'modeltranslation',
 ]
+
+LANGUAGES = (
+    ('en', 'English'),
+    ('pl', 'Polish'),
+)
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
