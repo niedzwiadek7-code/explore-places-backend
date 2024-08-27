@@ -25,6 +25,12 @@ class ActivitySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_liked_by_user(self, obj):
+        if (
+                not hasattr(self.context, 'request') or
+                not hasattr(self.context['request'], 'user')
+        ):
+            return False
+
         user = self.context['request'].user
         if user.is_anonymous:
             return False

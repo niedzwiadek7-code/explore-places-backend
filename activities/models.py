@@ -32,6 +32,7 @@ class Entity(models.Model):
     point_field = PointField(null=True)
     external_links = models.ForeignKey(ExternalLinks, on_delete=models.CASCADE, null=True)
     tags = ArrayField(models.CharField(max_length=250), blank=True, default=list)
+    original_language = models.CharField(max_length=250, null=False, default='pl')
 
     def __str__(self):
         return self.name
