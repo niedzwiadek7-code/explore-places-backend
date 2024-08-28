@@ -48,13 +48,18 @@ class Command(BaseCommand):
             self.logger.error(f'Service {service_name} not found')
             exit()
 
+    async def main(self, args, kwargs):
+        async for data in self.service_instance.fetch_data(kwargs):
+            print(data)
+
     @timeit_decorator
     def handle(self, *args, **kwargs):
         # TODO: move here database logic (if it possible)
         self.logger.info('Starting data migration...')
         try:
-            asyncio.run(self.service_instance.migrate(kwargs))
+            asyncio.run(self.main(args, kwargs))
+            # asyncio.run(self.service_instance.migrate(kwargs))
             self.logger.info('Data migration completed successfully')
         except Exception as e:
             self.logger.error(f'Error during migration: {e}')
-            exit()
+            raise e
