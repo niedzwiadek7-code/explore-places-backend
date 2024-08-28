@@ -58,7 +58,6 @@ class Command(BaseCommand):
         self.logger.info('Starting data migration...')
         try:
             asyncio.run(self.main(args, kwargs))
-            # asyncio.run(self.service_instance.migrate(kwargs))
             self.logger.info('Data migration completed successfully')
         except Exception as e:
             self.logger.error(f'Error during migration: {e}')
