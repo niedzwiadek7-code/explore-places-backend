@@ -14,6 +14,10 @@ class DataMigrationService(ABC):
     def fetch_data(self, args):
         pass
 
+    @abstractmethod
+    def process_data(self, obj):
+        pass
+
     # @abstractmethod
     # def migrate(self, args):
     #     pass

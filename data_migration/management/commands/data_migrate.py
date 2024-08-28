@@ -50,7 +50,7 @@ class Command(BaseCommand):
 
     async def main(self, args, kwargs):
         async for data in self.service_instance.fetch_data(kwargs):
-            print(data)
+            await self.service_instance.process_data(data)
 
     @timeit_decorator
     def handle(self, *args, **kwargs):

@@ -2,6 +2,11 @@ import asyncio
 import numpy as np
 import logging
 
+from asgiref.sync import sync_to_async
+from django.contrib.gis.geos import Point
+from django.db import transaction
+
+from activities.models import Address, ExternalLinks, Entity as ActivityEntity
 from data_migration.services.migrate.base import DataMigrationService
 from data_migration.models import OpenTripMap as OpenTripMapServiceData
 from services.api_service import APIService
@@ -82,3 +87,71 @@ class OpenStreetMapMigrationService(DataMigrationService):
         for step_result in await asyncio.gather(*step_tasks):
             for data in step_result:
                 yield data
+
+    @sync_to_async
+    def process_data(self, data):
+        try:
+            with transaction.atomic():
+                address_data = data.get('address', {})
+
+                def get_images():
+                    if data.get('preview') and data.get('preview').get('source'):
+                        return [data.get('preview').get('source')]
+                    if data.get('image'):
+                        return [data.get('image')]
+                    return []
+
+                def get_point_field():
+                    if data.get('point'):
+                        return Point(
+                            float(data.get('point').get('lon')),
+                            float(data.get('point').get('lat')),
+                            srid=4326
+                        )
+                    return None
+
+                def get_tags():
+                    if data.get('kinds'):
+                        return data.get('kinds').split(',')
+                    return []
+
+                if not data.get('name'):
+                    return None
+
+                if not get_images():
+                    return None
+
+                address, _ = Address.objects.get_or_create(
+                    street=f'{address_data.get("road", "")} {address_data.get("house_number", "")}',
+                    city=address_data.get('town'),
+                    state=address_data.get('state'),
+                    country=address_data.get('country'),
+                    postal_code=address_data.get('postcode'),
+                )
+
+                external_links, _ = ExternalLinks.objects.get_or_create(
+                    wikipedia_url=address_data.get('wikipedia'),
+                    website_url=address_data.get('url'),
+                )
+
+                ActivityEntity.objects.update_or_create(
+                    migration_data__xid=data.get('xid'),
+                    defaults=dict(
+                        name=data.get('name'),
+                        description=data.get('wikipedia_extracts', {}).get('text'),
+                        migration_data=dict(
+                            xid=data.get('xid'),
+                        ),
+                        images=get_images(),
+                        destination_resource='open_street_map',
+                        address=address,
+                        point_field=get_point_field(),
+                        external_links=external_links,
+                        tags=get_tags()
+                    )
+                )
+
+                self.logger.info(f'Place {data.get('xid')} - {data.get("name")} was successfully saved')
+
+        except Exception as err:
+            self.logger.error(f'Error processing place {data.get('xid')}: {err}')
