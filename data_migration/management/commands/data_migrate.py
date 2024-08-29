@@ -66,19 +66,19 @@ class Command(BaseCommand):
             name = activity.__dict__['name']
 
             try:
-                if getattr(activity, name_name) is None and name:
-                    if activity.original_language == code:
-                        name_translation = name
-                    else:
-                        name_translation = await asyncio.to_thread(translator.translate, name)
-                    setattr(activity, name_name, name_translation)
+                if activity.original_language == code:
+                    name_translation = name
+                else:
+                    name_translation = await asyncio.to_thread(translator.translate, name)
 
-                if getattr(activity, description_name) is None and description:
-                    if activity.original_language == code:
-                        description_translation = description
-                    else:
-                        description_translation = await asyncio.to_thread(translator.translate, description)
-                    setattr(activity, description_name, description_translation)
+                setattr(activity, name_name, name_translation)
+
+                if activity.original_language == code:
+                    description_translation = description
+                else:
+                    description_translation = await asyncio.to_thread(translator.translate, description)
+
+                setattr(activity, description_name, description_translation)
 
                 await activity.asave(
                     update_fields=[
@@ -97,8 +97,8 @@ class Command(BaseCommand):
 
     async def main(self, args):
         async def handle_record(data):
-            activity2 = await self.service_instance.process_data(data)
-            await self.translate_activity(activity2)
+            activity = await self.service_instance.process_data(data)
+            await self.translate_activity(activity)
 
         tasks = []
         async for data in self.service_instance.fetch_data(args):
