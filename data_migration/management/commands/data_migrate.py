@@ -54,13 +54,11 @@ class Command(BaseCommand):
         def get_language_codes(languages):
             return [code for code, _ in languages]
 
-        language_codes = get_language_codes(LANGUAGES)
+        async def activity_translate(language_code):
+            translator = Translator(target=language_code)
 
-        for code in language_codes:
-            translator = Translator(target=code)
-
-            description_name = f'description_{code}'
-            name_name = f'name_{code}'
+            description_name = f'description_{language_code}'
+            name_name = f'name_{language_code}'
 
             description = activity.__dict__['description']
             name = activity.__dict__['name']
@@ -93,6 +91,14 @@ class Command(BaseCommand):
             except Exception as e:
                 self.logger.error(f'Unexpected error: {str(e)}')
 
+        language_codes = get_language_codes(LANGUAGES)
+
+        tasks = []
+        for code in language_codes:
+            task = asyncio.create_task(activity_translate(code))
+            tasks.append(task)
+
+        await asyncio.gather(*tasks)
         self.logger.info(f'Activity {activity.id} - {activity.name} has been translated')
 
     async def main(self, args):
