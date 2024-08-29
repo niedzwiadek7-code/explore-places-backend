@@ -4,7 +4,6 @@ import asyncio
 import httpcore
 from django.core.management import BaseCommand
 from django.db import transaction
-from asgiref.sync import sync_to_async
 
 from activities.models import Entity
 from services.translator import Translator
@@ -35,15 +34,21 @@ class Command(BaseCommand):
         translator = self.get_translator(language)
 
         try:
-            if getattr(entity, name_name) is None and name:
+            if entity.original_language == language:
+                name_translation = name
+            else:
                 name_translation = await asyncio.to_thread(translator.translate, name)
-                setattr(entity, name_name, name_translation)
 
-            if getattr(entity, description_name) is None and description:
-                name_translation = await asyncio.to_thread(translator.translate, description)
-                setattr(entity, description_name, name_translation)
+            setattr(entity, name_name, name_translation)
 
-            await sync_to_async(entity.save)(
+            if entity.original_language == language:
+                description_translation = description
+            else:
+                description_translation = await asyncio.to_thread(translator.translate, description)
+
+            setattr(entity, description_name, description_translation)
+
+            await entity.asave(
                 update_fields=[
                     name_name,
                     description_name
