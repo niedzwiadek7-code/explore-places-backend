@@ -96,9 +96,16 @@ class Command(BaseCommand):
         self.logger.info(f'Activity {activity.id} - {activity.name} has been translated')
 
     async def main(self, args):
+        async def handle_record(data):
+            activity2 = await self.service_instance.process_data(data)
+            await self.translate_activity(activity2)
+
+        tasks = []
         async for data in self.service_instance.fetch_data(args):
-            activity = await self.service_instance.process_data(data)
-            await self.translate_activity(activity)
+            task = asyncio.create_task(handle_record(data))
+            tasks.append(task)
+
+        await asyncio.gather(*tasks)
 
     @timeit_decorator
     def handle(self, *args, **kwargs):
