@@ -1,11 +1,13 @@
+import httpcore
 import logging
 import importlib
 from django.core.management.base import BaseCommand
 import sys
-from django.db import transaction
 import asyncio
 
 from data_migration.models import Resource as DataMigrationResource
+from services.translator import Translator
+from travel_app_backend.settings import LANGUAGES
 from utils.decorators.timeit_decorator import timeit_decorator
 
 
@@ -48,16 +50,62 @@ class Command(BaseCommand):
             self.logger.error(f'Service {service_name} not found')
             exit()
 
-    async def main(self, args, kwargs):
-        async for data in self.service_instance.fetch_data(kwargs):
-            await self.service_instance.process_data(data)
+    async def translate_activity(self, activity):
+        def get_language_codes(languages):
+            return [code for code, _ in languages]
+
+        language_codes = get_language_codes(LANGUAGES)
+
+        for code in language_codes:
+            translator = Translator(target=code)
+
+            description_name = f'description_{code}'
+            name_name = f'name_{code}'
+
+            description = activity.__dict__['description']
+            name = activity.__dict__['name']
+
+            try:
+                if getattr(activity, name_name) is None and name:
+                    if activity.original_language == code:
+                        name_translation = name
+                    else:
+                        name_translation = await asyncio.to_thread(translator.translate, name)
+                    setattr(activity, name_name, name_translation)
+
+                if getattr(activity, description_name) is None and description:
+                    if activity.original_language == code:
+                        description_translation = description
+                    else:
+                        description_translation = await asyncio.to_thread(translator.translate, description)
+                    setattr(activity, description_name, description_translation)
+
+                await activity.asave(
+                    update_fields=[
+                        name_name,
+                        description_name
+                    ]
+                )
+
+            except httpcore._exceptions.ProtocolError as e:
+                self.logger.error(f'Error translating entity with id {activity.id}: {str(e)}')
+
+            except Exception as e:
+                self.logger.error(f'Unexpected error: {str(e)}')
+
+        self.logger.info(f'Activity {activity.id} - {activity.name} has been translated')
+
+    async def main(self, args):
+        async for data in self.service_instance.fetch_data(args):
+            activity = await self.service_instance.process_data(data)
+            await self.translate_activity(activity)
 
     @timeit_decorator
     def handle(self, *args, **kwargs):
         # TODO: move here database logic (if it possible)
         self.logger.info('Starting data migration...')
         try:
-            asyncio.run(self.main(args, kwargs))
+            asyncio.run(self.main(kwargs))
             self.logger.info('Data migration completed successfully')
         except Exception as e:
             self.logger.error(f'Error during migration: {e}')

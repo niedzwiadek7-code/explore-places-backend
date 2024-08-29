@@ -138,7 +138,7 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     website_url=address_data.get('url'),
                 )
 
-                ActivityEntity.objects.update_or_create(
+                activity, _ = ActivityEntity.objects.update_or_create(
                     migration_data__xid=data.get('xid'),
                     defaults=dict(
                         name=data.get('name'),
@@ -156,7 +156,9 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     )
                 )
 
-                self.logger.info(f'Place {data.get('xid')} - {data.get("name")} was successfully saved')
+                self.logger.info(f'Place {activity.id} - {data.get("name")} was successfully saved')
+
+                return activity
 
         except Exception as err:
             self.logger.error(f'Error processing place {data.get('xid')}: {err}')
