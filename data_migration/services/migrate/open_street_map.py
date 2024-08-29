@@ -10,6 +10,7 @@ from activities.models import Address, ExternalLinks, Entity as ActivityEntity
 from data_migration.services.migrate.base import DataMigrationService
 from data_migration.models import OpenTripMap as OpenTripMapServiceData
 from services.api_service import APIService
+from services.translator import Translator
 
 
 class OpenStreetMapMigrationService(DataMigrationService):
@@ -108,6 +109,11 @@ class OpenStreetMapMigrationService(DataMigrationService):
                         )
                     return None
 
+                def get_original_language():
+                    if data.get('wikipedia_extracts', {}).get('text'):
+                        return Translator.detect_language(data.get('wikipedia_extracts', {}).get('text'))
+                    return Translator.detect_language(data.get('name'))
+
                 def get_tags():
                     if data.get('kinds'):
                         return data.get('kinds').split(',')
@@ -145,7 +151,8 @@ class OpenStreetMapMigrationService(DataMigrationService):
                         address=address,
                         point_field=get_point_field(),
                         external_links=external_links,
-                        tags=get_tags()
+                        tags=get_tags(),
+                        original_language=get_original_language()
                     )
                 )
 
