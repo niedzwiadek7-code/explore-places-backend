@@ -9,6 +9,7 @@ from data_migration.models import Resource as DataMigrationResource
 from services.translator import Translator
 from travel_app_backend.settings import LANGUAGES
 from utils.decorators.timeit_decorator import timeit_decorator
+from activities.models import Translation as ActivityTranslation
 
 
 class Command(BaseCommand):
@@ -57,32 +58,21 @@ class Command(BaseCommand):
         async def activity_translate(language_code):
             translator = Translator(target=language_code)
 
-            description_name = f'description_{language_code}'
-            name_name = f'name_{language_code}'
-
             description = activity.__dict__['description']
             name = activity.__dict__['name']
 
             try:
                 if activity.original_language == code:
-                    name_translation = name
-                else:
-                    name_translation = await asyncio.to_thread(translator.translate, name)
+                    return
 
-                setattr(activity, name_name, name_translation)
+                description_translated = await asyncio.to_thread(translator.translate, description)
+                name_translated = await asyncio.to_thread(translator.translate, name)
 
-                if activity.original_language == code:
-                    description_translation = description
-                else:
-                    description_translation = await asyncio.to_thread(translator.translate, description)
-
-                setattr(activity, description_name, description_translation)
-
-                await activity.asave(
-                    update_fields=[
-                        name_name,
-                        description_name
-                    ]
+                await ActivityTranslation.objects.acreate(
+                    language=language_code,
+                    name=name_translated,
+                    description=description_translated,
+                    activity=activity
                 )
 
             except httpcore._exceptions.ProtocolError as e:

@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Entity as ActivityEntity, Like as ActivityLike, Save as ActivitySave, Address, ExternalLinks
+from .models import Entity as ActivityEntity, Like as ActivityLike, Save as ActivitySave, Address, ExternalLinks, \
+    Translation
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -14,11 +15,18 @@ class ExternalLinksSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ActivityTranslationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Translation
+        fields = '__all__'
+
+
 class ActivitySerializer(serializers.ModelSerializer):
     liked_by_user = serializers.SerializerMethodField()
     coordinates = serializers.SerializerMethodField()
     address = AddressSerializer(read_only=True)
     external_links = ExternalLinksSerializer()
+    translation = serializers.SerializerMethodField()
 
     class Meta:
         model = ActivityEntity
@@ -42,6 +50,23 @@ class ActivitySerializer(serializers.ModelSerializer):
                 latitude=obj.point_field.coords[1],
                 longitude=obj.point_field.coords[0]
             )
+        return None
+
+    def get_translation(self, obj):
+        request = self.context.get('request')
+
+        if request and 'language' in request.data:
+            if 'language' in request.data == obj.original_language:
+                return None
+
+            language = request.data.get('language')
+            translation = Translation.objects.filter(
+                language=language,
+                activity=obj
+            ).first()
+            if translation:
+                return ActivityTranslationSerializer(translation).data
+
         return None
 
 

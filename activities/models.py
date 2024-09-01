@@ -73,3 +73,13 @@ class Save(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.activity.name}"
+
+
+class Translation(models.Model):
+    activity = models.ForeignKey(Entity, on_delete=models.CASCADE)
+    language = models.CharField(max_length=250)
+    name = models.CharField(max_length=250)
+    description = models.TextField(null=True)
+
+    def __str__(self):
+        return f"{self.activity.name} - {self.language}"
