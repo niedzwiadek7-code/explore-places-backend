@@ -134,8 +134,8 @@ class OpenStreetMapMigrationService(DataMigrationService):
                 )
 
                 external_links, _ = ExternalLinks.objects.get_or_create(
-                    wikipedia_url=address_data.get('wikipedia'),
-                    website_url=address_data.get('url'),
+                    wikipedia_url=data.get('wikipedia'),
+                    website_url=data.get('url'),
                 )
 
                 activity, _ = ActivityEntity.objects.update_or_create(
