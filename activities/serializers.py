@@ -34,7 +34,7 @@ class ActivitySerializer(serializers.ModelSerializer):
 
     def get_liked_by_user(self, obj):
         if (
-                not hasattr(self.context, 'request') or
+                not self.context.get('request') or
                 not hasattr(self.context['request'], 'user')
         ):
             return False

@@ -70,7 +70,7 @@ class ActivitySaveViewSet(viewsets.ModelViewSet):
     serializer_class = ActivitySaveSerializer
 
 
-@api_view(['GET'])
+@api_view(['POST'])
 def get_liked_activities(request):
     user = request.user
     liked_activities = ActivityLike.objects.filter(user=user).select_related('activity').order_by('-created_at')
