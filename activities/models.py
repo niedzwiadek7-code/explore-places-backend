@@ -1,8 +1,7 @@
+from django.contrib.auth.models import User
 from django.contrib.gis.db.models import PointField
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
-
-from accounts.models import Entity as UserEntity
 
 
 class Address(models.Model):
@@ -22,7 +21,7 @@ class ExternalLinks(models.Model):
 
 
 class Entity(models.Model):
-    owner = models.ForeignKey(UserEntity, on_delete=models.CASCADE, null=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     name = models.CharField(max_length=250)
     description = models.TextField(null=True)
     images = ArrayField(models.URLField(), blank=True, default=list)
@@ -40,7 +39,7 @@ class Entity(models.Model):
 
 class Like(models.Model):
     activity = models.ForeignKey(Entity, on_delete=models.CASCADE)
-    user = models.ForeignKey(UserEntity, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -49,7 +48,7 @@ class Like(models.Model):
 
 class Comment(models.Model):
     activity = models.ForeignKey(Entity, on_delete=models.CASCADE)
-    user = models.ForeignKey(UserEntity, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -59,7 +58,7 @@ class Comment(models.Model):
 
 class View(models.Model):
     activity = models.ForeignKey(Entity, on_delete=models.CASCADE)
-    user = models.ForeignKey(UserEntity, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -68,7 +67,7 @@ class View(models.Model):
 
 class Save(models.Model):
     activity = models.ForeignKey(Entity, on_delete=models.CASCADE)
-    user = models.ForeignKey(UserEntity, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
