@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     'data_migration',
     'modeltranslation',
     'django.contrib.sites',
-    'authentication.apps.AuthenticationConfig',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
@@ -138,7 +137,9 @@ ROOT_URLCONF = 'travel_app_backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            BASE_DIR / 'templates',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
