@@ -16,6 +16,12 @@ class APIService:
             self.get = set_rate_limit(self.get)
             self.request = set_rate_limit(self.request)
 
+    def head(self, headers):
+        try:
+            return requests.head(self.base_url, headers=headers)
+        except RequestException as e:
+            return False
+
     def get(self, endpoint, query_params=None):
         try:
             if query_params:

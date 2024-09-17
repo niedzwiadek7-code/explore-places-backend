@@ -94,11 +94,24 @@ class OpenStreetMapMigrationService(DataMigrationService):
                 address_data = data.get('address', {})
 
                 def get_images():
-                    if data.get('preview') and data.get('preview').get('source'):
-                        return [data.get('preview').get('source')]
-                    if data.get('image'):
-                        return [data.get('image')]
-                    return []
+                    def is_image_available(url):
+                        #  try 3 times to get the image
+                        for _ in range(3):
+                            response = APIService(url).head(headers={'User-Agent': 'Mozilla/5.0'})
+                            if response:
+                                return response.status_code == 200 and 'image' in response.headers['Content-Type']
+                        return False
+
+                    images = []
+                    preview_source = data.get('preview', {}).get('source')
+                    if preview_source and is_image_available(preview_source):
+                        images.append(preview_source)
+
+                    image = data.get('image')
+                    if image and is_image_available(image):
+                        images.append(image)
+
+                    return images
 
                 def get_point_field():
                     if data.get('point'):
@@ -162,3 +175,31 @@ class OpenStreetMapMigrationService(DataMigrationService):
 
         except Exception as err:
             self.logger.error(f'Error processing place {data.get('xid')}: {err}')
+
+
+    @transaction.atomic
+    def filter_unreachable_photos(self):
+        allEntities = ActivityEntity.objects.filter(destination_resource='open_street_map')
+
+        def is_image_available(url):
+            #  try 3 times to get the image
+            for _ in range(3):
+                response = APIService(url).head(headers={'User-Agent': 'Mozilla/5.0'})
+                if response:
+                    return response.status_code == 200 and 'image' in response.headers['Content-Type']
+            return False
+
+        filtered = 0
+
+        for entity in allEntities:
+            images = entity.images
+            images = list(filter(is_image_available, images))
+            entity.images = images
+
+            if len(images) == 0:
+                self.logger.info(f'Place {entity.id} - {entity.name} has no reachable images')
+                entity.delete()
+                filtered += 1
+
+        self.logger.info(f'{filtered} unreachable photos were filtered')
+        return True
