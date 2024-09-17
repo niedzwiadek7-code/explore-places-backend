@@ -203,3 +203,23 @@ class OpenStreetMapMigrationService(DataMigrationService):
 
         self.logger.info(f'{filtered} unreachable photos were filtered')
         return True
+
+    @transaction.atomic
+    def delete_duplicates(self):
+        allEntities = ActivityEntity.objects.filter(destination_resource='open_street_map')
+
+        duplicates = 0
+
+        for entity in allEntities:
+            if ActivityEntity.objects.filter(
+                name=entity.name,
+                images=entity.images,
+                description=entity.description,
+                destination_resource='open_street_map'
+            ).count() > 1:
+                self.logger.info(f'Place {entity.id} - {entity.name} is a duplicate')
+                entity.delete()
+                duplicates += 1
+
+        self.logger.info(f'{duplicates} duplicates were filtered')
+        return True
