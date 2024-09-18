@@ -59,6 +59,7 @@ class Comment(models.Model):
 class View(models.Model):
     activity = models.ForeignKey(Entity, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    viewed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

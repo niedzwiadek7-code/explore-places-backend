@@ -56,6 +56,12 @@ def get_some_activities(request):
             distance=Distance('point_field', user_location)
         ).order_by('distance')[:count_to_get]
 
+    for activity in activities:
+        ActivityView.objects.create(
+            user=request.user,
+            activity=activity
+        )
+
     serializer = ActivitySerializer(activities, many=True, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -85,9 +91,10 @@ def track_views(request):
     activities = request.data.get('activityIds', [])
 
     for activity_id in activities:
-        ActivityView.objects.create(
+        ActivityView.objects.update(
             user=request.user,
-            activity=ActivityEntity.objects.get(id=activity_id)
+            activity=ActivityEntity.objects.get(id=activity_id),
+            viewed=True
         )
 
     return Response({'message': 'Activity saved'}, status=status.HTTP_200_OK)
