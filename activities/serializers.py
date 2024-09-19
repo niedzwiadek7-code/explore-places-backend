@@ -1,3 +1,4 @@
+from math import radians, sin, cos, sqrt, atan2
 from rest_framework import serializers
 from .models import Entity as ActivityEntity, Like as ActivityLike, Save as ActivitySave, Address, ExternalLinks, \
     Translation
@@ -24,6 +25,7 @@ class ActivityTranslationSerializer(serializers.ModelSerializer):
 class ActivitySerializer(serializers.ModelSerializer):
     liked_by_user = serializers.SerializerMethodField()
     coordinates = serializers.SerializerMethodField()
+    distance = serializers.SerializerMethodField()
     address = AddressSerializer(read_only=True)
     external_links = ExternalLinksSerializer()
     translation = serializers.SerializerMethodField()
@@ -68,6 +70,30 @@ class ActivitySerializer(serializers.ModelSerializer):
                 return ActivityTranslationSerializer(translation).data
 
         return None
+
+    def get_distance(self, obj):
+        if not self.context.get('user_location'):
+            return None
+
+        user_location = self.context['user_location']
+        obj_location = obj.point_field
+        if not obj_location:
+            return None
+
+        lat1, lon1 = user_location.y, user_location.x
+        lat2, lon2 = obj_location.y, obj_location.x
+        R = 6371000
+
+        φ1 = radians(lat1)
+        φ2 = radians(lat2)
+        Δφ = radians(lat2 - lat1)
+        Δλ = radians(lon2 - lon1)
+
+        a = sin(Δφ / 2) * sin(Δφ / 2) + cos(φ1) * cos(φ2) * sin(Δλ / 2) * sin(Δλ / 2)
+        c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+        distance_in_meters = R * c
+        return distance_in_meters
 
 
 class ActivityLikeSerializer(serializers.ModelSerializer):

@@ -41,6 +41,7 @@ def unlike_activity(request, activity_id):
 def get_some_activities(request):
     user_latitude = request.data.get('latitude')
     user_longitude = request.data.get('longitude')
+    user_location = None
 
     count_to_get = int(request.query_params.get('count', 10))
 
@@ -62,7 +63,10 @@ def get_some_activities(request):
             activity=activity
         )
 
-    serializer = ActivitySerializer(activities, many=True, context={'request': request})
+    serializer = ActivitySerializer(activities, many=True, context={
+        'request': request,
+        'user_location': user_location
+    })
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
