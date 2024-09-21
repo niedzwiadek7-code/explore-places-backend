@@ -6,7 +6,10 @@
       "use": "@vercel/python",
       "config": {
         "maxLambdaSize": "15mb",
-        "runtime": "python3.12.5"
+        "runtime": "python3.12.5",
+        "functions": {
+          "runtime": "vercel-python-gis@1.0.0"
+        }
       }
     },
     {
