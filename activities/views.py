@@ -47,6 +47,7 @@ def get_some_activities(request):
 
     activities_viewed = ActivityView.objects.filter(user=request.user)
     activities_viewed_ids = [activity_view.activity.id for activity_view in activities_viewed]
+    # print(activities_viewed_ids)
 
     if user_latitude is None or user_longitude is None:
         activities = ActivityEntity.objects.exclude(id__in=activities_viewed_ids).order_by('?')[:count_to_get]
@@ -62,6 +63,8 @@ def get_some_activities(request):
             user=request.user,
             activity=activity
         )
+
+    # print([activity.id for activity in activities])
 
     serializer = ActivitySerializer(activities, many=True, context={
         'request': request,
@@ -95,10 +98,10 @@ def track_views(request):
     activities = request.data.get('activityIds', [])
 
     for activity_id in activities:
-        ActivityView.objects.update(
+        ActivityView.objects.update_or_create(
             user=request.user,
             activity=ActivityEntity.objects.get(id=activity_id),
-            viewed=True
+            defaults=dict(viewed=True)
         )
 
     return Response({'message': 'Activity saved'}, status=status.HTTP_200_OK)
