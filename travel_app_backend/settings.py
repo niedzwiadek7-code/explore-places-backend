@@ -32,6 +32,7 @@ ALLOWED_HOSTS = environ.get('ALLOWED_HOSTS').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
+    'django.contrib.gis',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -173,6 +174,9 @@ DATABASES = {
         'PASSWORD': environ.get('DB_PASSWORD'),
         'HOST': environ.get('DB_HOST'),
         'PORT': environ.get('DB_PORT'),
+        # 'OPTIONS': {
+        #     'sslmode': 'require',
+        # }
     }
 }
 

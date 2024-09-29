@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 
+from utils.decorators.timeit_decorator import timeit_decorator
 from .models import Entity as ActivityEntity, View as ActivityView, Like as ActivityLike, Save as ActivitySave
 from .serializers import ActivitySerializer, ActivityLikeSerializer, ActivitySaveSerializer
 
@@ -45,8 +46,7 @@ def get_some_activities(request):
 
     count_to_get = int(request.query_params.get('count', 10))
 
-    activities_viewed = ActivityView.objects.filter(user=request.user)
-    activities_viewed_ids = [activity_view.activity.id for activity_view in activities_viewed]
+    activities_viewed_ids = ActivityView.objects.filter(user=request.user).values_list('id', flat=True)
     # print(activities_viewed_ids)
 
     if user_latitude is None or user_longitude is None:
