@@ -39,6 +39,7 @@ def unlike_activity(request, activity_id):
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
+@timeit_decorator
 def get_some_activities(request):
     user_latitude = request.data.get('latitude')
     user_longitude = request.data.get('longitude')
@@ -46,8 +47,7 @@ def get_some_activities(request):
 
     count_to_get = int(request.query_params.get('count', 10))
 
-    activities_viewed_ids = ActivityView.objects.filter(user=request.user).values_list('id', flat=True)
-    # print(activities_viewed_ids)
+    activities_viewed_ids = ActivityView.objects.filter(user=request.user).values_list('activity_id', flat=True)
 
     if user_latitude is None or user_longitude is None:
         activities = ActivityEntity.objects.exclude(id__in=activities_viewed_ids).order_by('?')[:count_to_get]
@@ -58,11 +58,16 @@ def get_some_activities(request):
             distance=Distance('point_field', user_location)
         ).order_by('distance')[:count_to_get]
 
+    bulk_list = []
     for activity in activities:
-        ActivityView.objects.create(
-            user=request.user,
-            activity=activity
+        bulk_list.append(
+            ActivityView(
+                user=request.user,
+                activity=activity
+            )
         )
+
+    ActivityView.objects.bulk_create(bulk_list)
 
     # print([activity.id for activity in activities])
 
@@ -94,14 +99,18 @@ def get_liked_activities(request):
 
 @api_view(['POST'])
 @parser_classes((JSONParser,))
+@timeit_decorator
 def track_views(request):
     activities = request.data.get('activityIds', [])
 
-    for activity_id in activities:
-        ActivityView.objects.update_or_create(
-            user=request.user,
-            activity=ActivityEntity.objects.get(id=activity_id),
-            defaults=dict(viewed=True)
-        )
+    activities_to_update = ActivityView.objects.filter(user=request.user, activity_id__in=activities)
+
+    for activity in activities_to_update:
+        activity.viewed = True
+
+    ActivityView.objects.bulk_update(
+        activities_to_update,
+        ['viewed'],
+    )
 
     return Response({'message': 'Activity saved'}, status=status.HTTP_200_OK)

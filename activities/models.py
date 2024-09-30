@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.contrib.gis.db.models import PointField
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from django.db.models import UniqueConstraint
 
 
 class Address(models.Model):
@@ -61,6 +62,11 @@ class View(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     viewed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    UniqueConstraint(
+        fields=['activity', 'user'],
+        name='unique_view'
+    )
 
     def __str__(self):
         return f"{self.user.username} - {self.activity.name}"
