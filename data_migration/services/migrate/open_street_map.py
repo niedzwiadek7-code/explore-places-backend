@@ -1,4 +1,6 @@
 import asyncio
+from pydoc import describe
+
 import numpy as np
 import logging
 
@@ -136,6 +138,15 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     return None
 
                 if not get_images():
+                    return None
+
+                if ActivityEntity.objects.filter(
+                    destination_resource='open_street_map',
+                    name=data.get('name'),
+                    images=get_images(),
+                    description=data.get('wikipedia_extracts', {}).get('text'),
+                ).count() > 0:
+                    self.logger.info(f'Place {data.get("xid")} - {data.get("name")} is a duplicate')
                     return None
 
                 address, _ = Address.objects.get_or_create(
