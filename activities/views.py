@@ -47,7 +47,10 @@ def get_some_activities(request):
 
     count_to_get = int(request.query_params.get('count', 10))
 
-    activities_viewed_ids = ActivityView.objects.filter(user=request.user).values_list('activity_id', flat=True)
+    activities_viewed_ids = ActivityView.objects.filter(
+        user=request.user,
+        viewed=True
+    ).values_list('activity_id', flat=True)
 
     if user_latitude is None or user_longitude is None:
         activities = ActivityEntity.objects.exclude(id__in=activities_viewed_ids).order_by('?')[:count_to_get]
