@@ -6,9 +6,32 @@ from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 
 from utils.decorators.timeit_decorator import timeit_decorator
-from .models import Entity as ActivityEntity, View as ActivityView, Like as ActivityLike, Save as ActivitySave
-from .serializers import ActivitySerializer, ActivityLikeSerializer, ActivitySaveSerializer
+from .models import Entity as ActivityEntity, View as ActivityView, Like as ActivityLike, Save as ActivitySave, \
+    Comment as ActivityComment, Comment
+from .serializers import ActivitySerializer, ActivityLikeSerializer, ActivitySaveSerializer, \
+    CommentSerializer
 
+
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = ActivityComment.objects.all()
+    serializer_class = CommentSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        activity_id = request.data.get('activity')
+        activity = ActivityEntity.objects.get(id=activity_id)
+        comment = request.data.get('comment')
+        ActivityComment.objects.create(
+            user=user,
+            activity=activity,
+            comment=comment
+        )
+        return Response({'message': 'Comment created'}, status=status.HTTP_201_CREATED)
 
 class ActivityViewSet(viewsets.ModelViewSet):
     queryset = ActivityEntity.objects.all()

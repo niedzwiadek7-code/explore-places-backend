@@ -1,12 +1,14 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+
 from .views import ActivityViewSet, ActivityLikeViewSet, ActivitySaveViewSet, get_some_activities, like_activity, \
-    unlike_activity, get_liked_activities, track_views
+    unlike_activity, get_liked_activities, track_views, CommentViewSet
 
 router = DefaultRouter()
 router.register(r'activities', ActivityViewSet)
 router.register(r'activity-likes', ActivityLikeViewSet)
 router.register(r'activity-save', ActivitySaveViewSet)
+router.register(r'comments', CommentViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

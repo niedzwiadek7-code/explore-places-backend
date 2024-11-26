@@ -1,7 +1,7 @@
 from math import radians, sin, cos, sqrt, atan2
 from rest_framework import serializers
 from .models import Entity as ActivityEntity, Like as ActivityLike, Save as ActivitySave, Address, ExternalLinks, \
-    Translation
+    Translation, Comment as ActivityComment
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -21,6 +21,16 @@ class ActivityTranslationSerializer(serializers.ModelSerializer):
         model = Translation
         fields = '__all__'
 
+class CommentSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ActivityComment
+        fields = '__all__'
+
+    def get_user(self, obj):
+        return obj.user.username
+
 
 class ActivitySerializer(serializers.ModelSerializer):
     liked_by_user = serializers.SerializerMethodField()
@@ -29,6 +39,7 @@ class ActivitySerializer(serializers.ModelSerializer):
     address = AddressSerializer(read_only=True)
     external_links = ExternalLinksSerializer()
     translation = serializers.SerializerMethodField()
+    comments = serializers.SerializerMethodField()
 
     class Meta:
         model = ActivityEntity
@@ -94,6 +105,11 @@ class ActivitySerializer(serializers.ModelSerializer):
 
         distance_in_meters = R * c
         return distance_in_meters
+
+    def get_comments(self, obj):
+        # Filter comments related to the current activity
+        comments = ActivityComment.objects.filter(activity=obj)
+        return CommentSerializer(comments, many=True).data
 
 
 class ActivityLikeSerializer(serializers.ModelSerializer):
