@@ -63,10 +63,13 @@ class View(models.Model):
     viewed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    UniqueConstraint(
-        fields=['activity', 'user'],
-        name='unique_view'
-    )
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                fields=['activity', 'user'],
+                name='unique_view'
+            )
+        ]
 
     def __str__(self):
         return f"{self.user.username} - {self.activity.name}"

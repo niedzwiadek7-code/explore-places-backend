@@ -93,7 +93,7 @@ def get_some_activities(request):
             )
         )
 
-    ActivityView.objects.bulk_create(bulk_list)
+    ActivityView.objects.bulk_create(bulk_list, ignore_conflicts=True)
 
     # print([activity.id for activity in activities])
 
