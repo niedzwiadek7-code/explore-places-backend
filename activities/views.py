@@ -126,8 +126,23 @@ class ActivitySaveViewSet(viewsets.ModelViewSet):
 @api_view(['POST'])
 def get_liked_activities(request):
     user = request.user
-    liked_activities = ActivityLike.objects.filter(user=user).select_related('activity').order_by('-created_at')
-    activities = [like.activity for like in liked_activities]
+    user_latitude = request.data.get('latitude')
+    user_longitude = request.data.get('longitude')
+    print(user_latitude, user_longitude)
+    user_location = Location(user_latitude, user_longitude)
+
+    liked_activity_ids = list(
+        ActivityLike.objects.filter(user=user)
+        .order_by('-created_at')
+        .values_list('activity_id', flat=True)
+    )
+
+    activities_qs = ActivityEntity.objects.filter(id__in=liked_activity_ids)
+    activities_qs = annotate_with_distance(activities_qs, user_location.latitude, user_location.longitude)
+
+    activities = list(activities_qs)
+    activities.sort(key=lambda a: liked_activity_ids.index(a.id))
+
     serializer = ActivitySerializer(activities, many=True, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
