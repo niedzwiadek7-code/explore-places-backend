@@ -1,5 +1,3 @@
-from django.db.models import F, Value
-from django.db.models.functions import Radians, Power, Sin, Cos, Sqrt, ATan2
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import JSONParser
@@ -66,6 +64,7 @@ def unlike_activity(request, activity_id):
 @parser_classes((JSONParser,))
 @timeit_decorator
 def get_some_activities(request):
+    ignored_ids = request.data.get('ignored_ids', [])
     user_latitude = request.data.get('latitude')
     user_longitude = request.data.get('longitude')
     user_location = None
@@ -77,16 +76,16 @@ def get_some_activities(request):
         viewed=True
     ).values_list('activity_id', flat=True)
 
-    queryset = ActivityEntity.objects.exclude(id__in=activities_viewed_ids)
+    all_excluded_ids = set(
+        [int(id) for id in ignored_ids] + list(activities_viewed_ids)
+    )
+
+    queryset = ActivityEntity.objects.exclude(id__in=all_excluded_ids)
 
     if user_latitude is None or user_longitude is None:
         activities = queryset.order_by('?')[:count_to_get]
     else:
         user_location = Location(user_latitude, user_longitude)
-        print(
-            user_location.latitude,
-            user_location.longitude
-        )
 
         queryset = annotate_with_distance(
             queryset,
