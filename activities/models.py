@@ -1,5 +1,4 @@
 from django.contrib.auth.models import User
-from django.contrib.gis.db.models import PointField
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import UniqueConstraint
@@ -11,6 +10,8 @@ class Address(models.Model):
     state = models.CharField(max_length=250, null=True)
     country = models.CharField(max_length=250, null=True)
     postal_code = models.CharField(max_length=250, null=True)
+    latitude = models.FloatField(null=True)
+    longitude = models.FloatField(null=True)
 
     def __str__(self):
         return f"{self.street}, {self.city}, {self.country}"
@@ -29,7 +30,7 @@ class Entity(models.Model):
     destination_resource = models.CharField(max_length=250, default='user')
     migration_data = models.JSONField(default=dict)
     address = models.ForeignKey(Address, on_delete=models.CASCADE, null=True)
-    point_field = PointField(null=True)
+    # point_field = PointField(null=True)
     external_links = models.ForeignKey(ExternalLinks, on_delete=models.CASCADE, null=True)
     tags = ArrayField(models.CharField(max_length=250), blank=True, default=list)
     original_language = models.CharField(max_length=250, null=False, default='pl')
@@ -82,13 +83,3 @@ class Save(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.activity.name}"
-
-
-class Translation(models.Model):
-    activity = models.ForeignKey(Entity, on_delete=models.CASCADE)
-    language = models.CharField(max_length=250)
-    name = models.CharField(max_length=250)
-    description = models.TextField(null=True)
-
-    def __str__(self):
-        return f"{self.activity.name} - {self.language}"

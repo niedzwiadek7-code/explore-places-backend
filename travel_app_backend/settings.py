@@ -32,7 +32,6 @@ ALLOWED_HOSTS = environ.get('ALLOWED_HOSTS').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
-    'django.contrib.gis',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -167,8 +166,7 @@ AUTHENTICATION_BACKENDS = [
 
 DATABASES = {
     'default': {
-        # 'ENGINE': 'django.db.backends.postgresql',
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': environ.get('DB_NAME'),
         'USER': environ.get('DB_USER'),
         'PASSWORD': environ.get('DB_PASSWORD'),
@@ -267,5 +265,5 @@ LOGGING = {
 }
 
 # Set GDAL Library
-GDAL_LIBRARY_PATH = environ.get('GDAL_LIBRARY_PATH')
-GEOS_LIBRARY_PATH = environ.get('GEOS_LIBRARY_PATH')
+# GDAL_LIBRARY_PATH = environ.get('GDAL_LIBRARY_PATH')
+# GEOS_LIBRARY_PATH = environ.get('GEOS_LIBRARY_PATH')

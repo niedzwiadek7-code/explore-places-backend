@@ -1,13 +1,15 @@
-from django.contrib.gis.db.models.functions import Distance
-from django.contrib.gis.geos import Point
+from django.db.models import F, Value
+from django.db.models.functions import Radians, Power, Sin, Cos, Sqrt, ATan2
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 
 from utils.decorators.timeit_decorator import timeit_decorator
+from utils.geo_utils import Location
+from .db_functions import annotate_with_distance
 from .models import Entity as ActivityEntity, View as ActivityView, Like as ActivityLike, Save as ActivitySave, \
-    Comment as ActivityComment, Comment
+    Comment as ActivityComment
 from .serializers import ActivitySerializer, ActivityLikeSerializer, ActivitySaveSerializer, \
     CommentSerializer
 
@@ -75,14 +77,24 @@ def get_some_activities(request):
         viewed=True
     ).values_list('activity_id', flat=True)
 
-    if user_latitude is None or user_longitude is None:
-        activities = ActivityEntity.objects.exclude(id__in=activities_viewed_ids).order_by('?')[:count_to_get]
-    else:
-        user_location = Point(float(user_longitude), float(user_latitude), srid=4326)
+    queryset = ActivityEntity.objects.exclude(id__in=activities_viewed_ids)
 
-        activities = ActivityEntity.objects.exclude(id__in=activities_viewed_ids).annotate(
-            distance=Distance('point_field', user_location)
-        ).order_by('distance')[:count_to_get]
+    if user_latitude is None or user_longitude is None:
+        activities = queryset.order_by('?')[:count_to_get]
+    else:
+        user_location = Location(user_latitude, user_longitude)
+        print(
+            user_location.latitude,
+            user_location.longitude
+        )
+
+        queryset = annotate_with_distance(
+            queryset,
+            user_location.latitude,
+            user_location.longitude
+        )
+
+        activities = queryset.order_by('distance')[:count_to_get]
 
     bulk_list = []
     for activity in activities:
@@ -94,8 +106,6 @@ def get_some_activities(request):
         )
 
     ActivityView.objects.bulk_create(bulk_list, ignore_conflicts=True)
-
-    # print([activity.id for activity in activities])
 
     serializer = ActivitySerializer(activities, many=True, context={
         'request': request,

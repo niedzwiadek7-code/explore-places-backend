@@ -5,7 +5,6 @@ import numpy as np
 import logging
 
 from asgiref.sync import sync_to_async
-from django.contrib.gis.geos import Point
 from django.db import transaction
 
 from activities.models import Address, ExternalLinks, Entity as ActivityEntity
@@ -13,6 +12,7 @@ from data_migration.services.migrate.base import DataMigrationService
 from data_migration.models import OpenTripMap as OpenTripMapServiceData
 from services.api_service import APIService
 from services.translator import Translator
+from utils.geo_utils import Location
 
 
 class OpenStreetMapMigrationService(DataMigrationService):
@@ -117,10 +117,9 @@ class OpenStreetMapMigrationService(DataMigrationService):
 
                 def get_point_field():
                     if data.get('point'):
-                        return Point(
-                            float(data.get('point').get('lon')),
-                            float(data.get('point').get('lat')),
-                            srid=4326
+                        return Location(
+                            latitude=data.get('point').get('lat'),
+                            longitude=data.get('point').get('lon')
                         )
                     return None
 
@@ -149,12 +148,15 @@ class OpenStreetMapMigrationService(DataMigrationService):
                     self.logger.info(f'Place {data.get("xid")} - {data.get("name")} is a duplicate')
                     return None
 
+                location = get_point_field()
                 address, _ = Address.objects.get_or_create(
                     street=f'{address_data.get("road", "")} {address_data.get("house_number", "")}',
                     city=address_data.get('town'),
                     state=address_data.get('state'),
                     country=address_data.get('country'),
                     postal_code=address_data.get('postcode'),
+                    latitude=location.latitude if location else None,
+                    longitude=location.longitude if location else None
                 )
 
                 external_links, _ = ExternalLinks.objects.get_or_create(
@@ -173,7 +175,6 @@ class OpenStreetMapMigrationService(DataMigrationService):
                         images=get_images(),
                         destination_resource='open_street_map',
                         address=address,
-                        point_field=get_point_field(),
                         external_links=external_links,
                         tags=get_tags(),
                         original_language=get_original_language()

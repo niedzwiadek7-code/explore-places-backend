@@ -6,10 +6,7 @@ import sys
 import asyncio
 
 from data_migration.models import Resource as DataMigrationResource
-from services.translator import Translator
-from travel_app_backend.settings import LANGUAGES
 from utils.decorators.timeit_decorator import timeit_decorator
-from activities.models import Translation as ActivityTranslation
 
 
 class Command(BaseCommand):
@@ -51,50 +48,50 @@ class Command(BaseCommand):
             self.logger.error(f'Service {service_name} not found')
             exit()
 
-    async def translate_activity(self, activity):
-        def get_language_codes(languages):
-            return [code for code, _ in languages]
-
-        async def activity_translate(language_code):
-            translator = Translator(target=language_code)
-
-            description = activity.__dict__['description']
-            name = activity.__dict__['name']
-
-            try:
-                if activity.original_language == code:
-                    return
-
-                description_translated = await asyncio.to_thread(translator.translate, description)
-                name_translated = await asyncio.to_thread(translator.translate, name)
-
-                await ActivityTranslation.objects.acreate(
-                    language=language_code,
-                    name=name_translated,
-                    description=description_translated,
-                    activity=activity
-                )
-
-            except httpcore._exceptions.ProtocolError as e:
-                self.logger.error(f'Error translating entity with id {activity.id}: {str(e)}')
-
-            except Exception as e:
-                self.logger.error(f'Unexpected error: {str(e)}')
-
-        language_codes = get_language_codes(LANGUAGES)
-
-        tasks = []
-        for code in language_codes:
-            task = asyncio.create_task(activity_translate(code))
-            tasks.append(task)
-
-        await asyncio.gather(*tasks)
-        self.logger.info(f'Activity {activity.id} - {activity.name} has been translated')
+    # async def translate_activity(self, activity):
+    #     def get_language_codes(languages):
+    #         return [code for code, _ in languages]
+    #
+    #     async def activity_translate(language_code):
+    #         translator = Translator(target=language_code)
+    #
+    #         description = activity.__dict__['description']
+    #         name = activity.__dict__['name']
+    #
+    #         try:
+    #             if activity.original_language == code:
+    #                 return
+    #
+    #             description_translated = await asyncio.to_thread(translator.translate, description)
+    #             name_translated = await asyncio.to_thread(translator.translate, name)
+    #
+    #             await ActivityTranslation.objects.acreate(
+    #                 language=language_code,
+    #                 name=name_translated,
+    #                 description=description_translated,
+    #                 activity=activity
+    #             )
+    #
+    #         except httpcore._exceptions.ProtocolError as e:
+    #             self.logger.error(f'Error translating entity with id {activity.id}: {str(e)}')
+    #
+    #         except Exception as e:
+    #             self.logger.error(f'Unexpected error: {str(e)}')
+    #
+    #     language_codes = get_language_codes(LANGUAGES)
+    #
+    #     tasks = []
+    #     for code in language_codes:
+    #         task = asyncio.create_task(activity_translate(code))
+    #         tasks.append(task)
+    #
+    #     await asyncio.gather(*tasks)
+    #     self.logger.info(f'Activity {activity.id} - {activity.name} has been translated')
 
     async def main(self, args):
         async def handle_record(data):
             activity = await self.service_instance.process_data(data)
-            await self.translate_activity(activity)
+            # await self.translate_activity(activity)
 
         tasks = []
         async for data in self.service_instance.fetch_data(args):
