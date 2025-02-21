@@ -26,10 +26,12 @@ class CommentViewSet(viewsets.ModelViewSet):
         activity_id = request.data.get('activity')
         activity = ActivityEntity.objects.get(id=activity_id)
         comment = request.data.get('comment')
+        rating = request.data.get('rating', 0)
         ActivityComment.objects.create(
             user=user,
             activity=activity,
-            comment=comment
+            comment=comment,
+            rating=rating,
         )
         return Response({'message': 'Comment created'}, status=status.HTTP_201_CREATED)
 

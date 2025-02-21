@@ -53,6 +53,7 @@ class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    rating = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.user.username} - {self.activity.name}"
