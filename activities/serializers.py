@@ -54,7 +54,7 @@ class ActivitySerializer(serializers.ModelSerializer):
         return ActivityLike.objects.filter(activity=obj, user=user).exists()
 
     def get_distance(self, obj):
-        if obj.distance:
+        if hasattr(obj, 'distance') and obj.distance is not None:
             return obj.distance
 
         return None
